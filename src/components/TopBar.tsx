@@ -6,7 +6,7 @@ import { alphaToTransparency, transparencyPercent, transparencyToAlpha } from '.
 import { CARD_SIZE_OPTIONS, DEFAULT_CARD_SIZE } from '../cardSize'
 import { serializeProject } from '../mediaPersistence'
 import { isSubtitle } from '../subtitleTrack'
-import { DEFAULT_SFX_ID, DEFAULT_SFX_VOLUME, getSfxVersion, playSfx, sfxOptions, subscribeSfx, type SfxId } from '../sfx'
+import { DEFAULT_SFX_ID, DEFAULT_SFX_VOLUME, SFX_MUTED, getSfxVersion, playSfx, sfxOptions, subscribeSfx, type SfxId } from '../sfx'
 
 const PALETTE_FIELDS: { key: keyof Palette; name: string; hint: string }[] = [
   { key: 'accent', name: '主色', hint: '标题、强调、关键线条' },
@@ -357,10 +357,12 @@ export default function TopBar({
                 </button>
               </div>
               <div className="os-dd-note-block">
-                {project.sfxEnabled === false
-                  ? '总开关：已关。预览与导出都不出声（导出不烤音轨），卡片上配好的音效都留着，一键就能开回来。'
-                  : '总开关：开。动效卡出现时会发声，导出也会混成一条音轨烤进成片。'}
-                只在这里改一次，全片生效。
+                {SFX_MUTED
+                  ? '本版本不发声：开关、音量、默认音效都会保存，卡片上的配置也留得住，但预览与导出都不出声。'
+                  : project.sfxEnabled === false
+                    ? '总开关：已关。预览与导出都不出声（导出不烤音轨），卡片上配好的音效都留着，一键就能开回来。'
+                    : '总开关：开。动效卡出现时会发声，导出也会混成一条音轨烤进成片。'}
+                {!SFX_MUTED && '只在这里改一次，全片生效。'}
               </div>
               <div className="os-dd-label">
                 默认音效
@@ -401,7 +403,9 @@ export default function TopBar({
                 <span>{Math.round((project.sfxVolume ?? DEFAULT_SFX_VOLUME) * 100)}%</span>
               </div>
               <div className="os-dd-note-block">
-                音效只在播放时出声（拖播放头不响），导出会混成一条音轨烤进成片。口播字幕默认不发音效。
+                {SFX_MUTED
+                  ? '音效设置会随工程保存（换有声版本时原样生效），本版本不播放声音。口播字幕默认不配音效。'
+                  : '音效只在播放时出声（拖播放头不响），导出会混成一条音轨烤进成片。口播字幕默认不发音效。'}
               </div>
               <div className="os-dd-title">画布方向</div>
               <div className="os-dd-seg">

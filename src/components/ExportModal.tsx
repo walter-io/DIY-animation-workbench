@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useEditor } from '../store'
 import Modal from './Modal'
 import { isSubtitle } from '../subtitleTrack'
-import { audioBufferToWavBase64, renderSfxMix, resolveSfx } from '../sfx'
+import { SFX_MUTED, audioBufferToWavBase64, renderSfxMix, resolveSfx } from '../sfx'
 
 /** 二进制 → base64（音效烤入 / 素材像素送进无头渲染页都走这个） */
 function fileToBase64(file: Blob): Promise<string> {
@@ -214,7 +214,7 @@ export default function ExportModal({ onClose }: { onClose: () => void }) {
           <div className="os-param-note-line">透明导出是逐帧截图，速度固定，不受这里影响</div>
         )}
         <div className="os-param-row">
-          <label>音效烤入（可选）</label>
+          <label>音轨（可选）</label>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input
               ref={audioRef}
@@ -238,7 +238,12 @@ export default function ExportModal({ onClose }: { onClose: () => void }) {
             )}
           </div>
         </div>
-        {sfxCues.length > 0 ? (
+        {SFX_MUTED ? (
+          <div className="os-param-note-line">
+            本版本不发声：动效卡的音效设置会留着，但预览与导出都不出声音。
+            {audio ? '上面选的音频文件仍会原样烤进成片。' : '需要声音的话，可在上面单独选一个音频文件。'}
+          </div>
+        ) : sfxCues.length > 0 ? (
           <div className="os-param-note-line">
             🔊 本次会烤入 <b>{sfxCues.length}</b> 个动效卡音效
             {audio ? '，并与上面选的音频混在一起' : ''}（合成成一条 WAV 音轨）

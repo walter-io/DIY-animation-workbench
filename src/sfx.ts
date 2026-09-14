@@ -1,7 +1,11 @@
 /**
- * 音效库 —— 科技感合成音效。
+ * 音效库 —— 科技感合成音效 + （原有版本用过的）采样音效声明。
  *
- * 为什么是"合成"而不是放音频文件：
+ * ⚠️ 本副本为「无音效」版本：`SFX_MUTED = true`，所有音效定义只用于**保留下拉选项与工程数据**，
+ *    实际播放/导出全部静音；原先 `public/sfx/` 下的 mp3 素材已整体删除。
+ *    下面那些带 `src` 的采样音效定义**故意保留**，这样老工程里存过的 sfxId 仍能正常解算、不被抹掉。
+ *
+ * 为什么以"合成"为主：
  *  - 这个项目是本地离线工具，往仓库里塞一堆 mp3/wav 既臃肿又有版权问题；
  *  - 科技感音效（UI 提示音、能量上涌、故障噪点这类）本来就是用振荡器 + 噪声 + 滤波包络做出来的，
  *    合成出来的质感反而更"电子"，也更好统一音量；
@@ -60,6 +64,19 @@ export type BuiltinSfxId =
 
 /** 对外用的音效 id：内置补全 + 允许拓展包自带任意 id */
 export type SfxId = BuiltinSfxId | (string & {})
+
+/**
+ * ── 静音开关（本副本为「无音效」版本） ──
+ *
+ * 为 true 时，所有音效只保留「设置层」：参数面板的下拉、音量滑杆、总开关、
+ * 导出面板的烤入开关全部照常显示与保存，但**任何时刻都不会真的出声**，
+ * 导出也不会合成音轨（renderSfxMix 返回 null，调用方自动跳过）。
+ *
+ * 之所以做成一个开关而不是删代码：工程里已经存了每张卡的音效配置，
+ * 保持定义不变才能让老工程、模板原样读回，将来想恢复有声也只是把这里改回 false。
+ */
+export const SFX_MUTED = true
+
 
 /** 新建工程 / 没单独指定音效的卡，默认用这个（最百搭、不抢戏的那一个） */
 export const DEFAULT_SFX_ID: SfxId = 'neonBlip'
@@ -335,6 +352,8 @@ export function scheduleSfxCue(
   gain: number,
   sustain?: number,
 ): void {
+  // 无音效版本：设置层照常，但一个节点都不往上下文里塞
+  if (SFX_MUTED) return
   // 预览路径换到"可停视图"上：节点统一登记、输出汇进总线，暂停即可全停
   const target = cacheKeyOf(ctx)
   // 只要给了时长（手动 sfxDuration 或长卡自动解算）且确实比一声长，就按持续模式铺满；
@@ -376,6 +395,8 @@ export function scheduleSfxCue(
 
 /** 预热：把所有采样音效（内置 + 拓展包已装载的）解码进预览上下文（app 启动后调用一次，试听/预览首响不空拍） */
 export function preloadSfxFiles(): void {
+  // 无音效版本：素材已删，预热只会白打一堆 404，直接跳过
+  if (SFX_MUTED) return
   const ctx = liveContext()
   if (!ctx) return
   for (const def of sfxLibrary()) {
@@ -1312,6 +1333,8 @@ function liveContext(): AudioContext | null {
 
 /** 立即播一次（试听按钮 / 预览播放触发）。sustain = 需要延续的秒数（长卡跟随数据动画），试听不传就是干脆一声 */
 export function playSfx(id: SfxId | undefined, volume = 1, sustain?: number): void {
+  // 无音效版本：直接返回，连 AudioContext 都不创建
+  if (SFX_MUTED) return
   const def = sfxDef(id)
   if (!def) return
   const ctx = liveContext()
@@ -1352,6 +1375,9 @@ export async function renderSfxMix(
   duration: number,
   opts: { sampleRate?: number; bed?: AudioBuffer | null } = {},
 ): Promise<AudioBuffer | null> {
+  // 无音效版本：不合成任何音轨（调用方拿到 null 会自动跳过烤入）。
+  // 注意这里连 bed 也一并忽略 —— 否则会导出一条只有背景音的"空音轨"。
+  if (SFX_MUTED) return null
   const sampleRate = opts.sampleRate ?? SFX_MIX_SAMPLE_RATE
   const bed = opts.bed ?? null
   const usable = cues.filter((c) => sfxDef(c.id) && c.gain > 0.001 && Number.isFinite(c.at) && c.at >= 0)
