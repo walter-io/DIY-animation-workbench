@@ -1,0 +1,36 @@
+{
+  "name": "animation-editor",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "sync:hf": "node scripts/sync-hyperframes.mjs",
+    "audit:layout": "node scripts/audit-layout.cjs",
+    "verify:hf": "node scripts/verify-hf-bridge.cjs",
+    "verify:subtitle": "tsc -p tsconfig.verify.json && node -e \"require('fs').writeFileSync('.verify-out/package.json', JSON.stringify({type:'commonjs'}))\" && node scripts/verify-subtitle-track.cjs",
+    "verify:ui": "node scripts/verify-bg-and-subtitles.cjs",
+    "verify:panel": "node scripts/verify-panel-tools.cjs",
+    "verify:video": "node scripts/verify-video-sync.cjs",
+    "verify:subs": "node scripts/verify-subtitle-style.cjs",
+    "verify:margin": "node scripts/verify-auto-margin.cjs",
+    "verify:sfx": "node scripts/verify-sfx.cjs"
+  },
+  "dependencies": {
+    "playwright": "^1.62.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "oxlint": "^1.75.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0"
+  }
+}

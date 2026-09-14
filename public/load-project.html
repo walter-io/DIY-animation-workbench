@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN" data-page-node-id="DGkj2UZKZmLsrqGXNrXqOv">
+<head data-page-node-id="hFK8qVAtQEAO4PClewXA7H">
+<meta charset="utf-8" data-page-node-id="reuWuueRF8lvxF4DTIDkQx" />
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="bFQg6bmKwsi96rnSeUJyIH" />
+<title>载入已匹配工程</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #f5f6f8; color: #1f2328;
+    font: 14px/1.6 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  .card {
+    width: 560px; max-width: calc(100vw - 40px); background: #fff;
+    border: 1px solid rgba(0,0,0,.1); border-radius: 14px; padding: 28px 30px;
+  }
+  h1 { margin: 0 0 6px; font-size: 18px; font-weight: 500; }
+  .sub { margin: 0 0 20px; color: #6b7280; font-size: 13px; }
+  .stat { display: flex; gap: 22px; margin: 0 0 20px; padding: 14px 16px; background: #f7f8fa; border-radius: 10px; }
+  .stat div { font-size: 12px; color: #6b7280; }
+  .stat b { display: block; font-size: 20px; font-weight: 500; color: #1f2328; margin-bottom: 2px; }
+  .list { max-height: 220px; overflow: auto; margin: 0 0 22px; border: 1px solid rgba(0,0,0,.08); border-radius: 10px; }
+  .row { display: flex; gap: 10px; padding: 8px 14px; border-bottom: 1px solid rgba(0,0,0,.05); font-size: 13px; }
+  .row:last-child { border-bottom: 0; }
+  .row time { color: #9ca3af; font-variant-numeric: tabular-nums; flex: none; }
+  .row span { color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  button {
+    width: 100%; padding: 12px; border: 0; border-radius: 10px; cursor: pointer;
+    background: #1f6feb; color: #fff; font-size: 15px; font-weight: 500; font-family: inherit;
+  }
+  button:hover { background: #1a5fd0; }
+  button:disabled { background: #c8cdd4; cursor: default; }
+  .msg { margin-top: 14px; font-size: 13px; text-align: center; min-height: 20px; }
+  .msg.ok { color: #137a3c; }
+  .msg.err { color: #b42318; }
+</style>
+</head>
+<body data-page-node-id="bfBnYFeaJ32vIRQCbzOIOP">
+<div class="card" data-page-node-id="8ynWEArgP5pcRHGLWmkC9r">
+  <h1 data-page-node-id="Lrj5iJbnHMvFQWABHxS6nS">载入已匹配工程</h1>
+  <p class="sub" data-page-node-id="NCTtaQBKOpMVr8q3ky9cte">这份工程由 WorkBuddy 按你的字幕预先算好，写入后在你自己的编辑台里打开。</p>
+
+  <div class="stat" data-page-node-id="0QkmuwDPdcEPWkJV3b0b3B">
+    <div data-page-node-id="PaF7UF8EPBvm6JF4GstcOw"><b id="nCard" data-page-node-id="gtU7SQ9seqGFGfMhhSVZ3z">–</b>张动效卡</div>
+    <div data-page-node-id="rGI9qcgZFFm3UDUjgR5EHa"><b id="nSub" data-page-node-id="DkY3etxcZoVGJPsqb604TA">–</b>张字幕卡</div>
+    <div data-page-node-id="rOszc7ZqGAZKPIe9y27CTr"><b id="nDur" data-page-node-id="yIxNmdLc0lOmO9sf39IhjI">–</b>总时长</div>
+  </div>
+
+  <div class="list" id="list" data-page-node-id="rMsLhfDgLYDH0Iy1EEYNIa"></div>
+
+  <button id="go" disabled data-page-node-id="cJOgoqejr4FwXuD73xS5Jf">载入并打开编辑台</button>
+  <div class="msg" id="msg" data-page-node-id="LCO6GNIljBK0AwoRjy9Ob1">正在读取工程…</div>
+</div>
+
+<script>
+const KEY = 'animation-editor-project-v1'
+const $ = (id) => document.getElementById(id)
+const mmss = (t) =>
+  String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(Math.floor(t % 60)).padStart(2, '0')
+
+let project = null
+
+fetch('./_imported-project.json')
+  .then((r) => r.json())
+  .then((p) => {
+    project = p
+    const subs = p.instances.filter((i) => i.effectId === 'srt-subtitle')
+    const cards = p.instances
+      .filter((i) => i.effectId !== 'srt-subtitle' && i.director)
+      .sort((a, b) => a.start - b.start)
+    $('nCard').textContent = cards.length
+    $('nSub').textContent = subs.length
+    $('nDur').textContent = Math.round(p.duration) + 's'
+    $('list').innerHTML = cards
+      .map((c) => {
+        const txt = Object.entries(c.params)
+          .filter(([k, v]) => typeof v === 'string' && v)
+          .filter(([k]) => !['icons', 'centerEn', 'altTitle', 'chipLeft', 'chipRight', 'kicker'].includes(k))
+          .map(([, v]) => v)
+          .join(' · ')
+          .replace(/\n/g, ' · ')
+        return '<div class="row"><time>' + mmss(c.start) + '</time><span>' + (c.name || c.effectId) + '　' + txt.slice(0, 40) + '</span></div>'
+      })
+      .join('')
+    $('go').disabled = false
+    $('msg').textContent = ''
+  })
+  .catch((e) => {
+    $('msg').textContent = '读取工程失败：' + e.message
+    $('msg').className = 'msg err'
+  })
+
+$('go').addEventListener('click', () => {
+  if (!project) return
+  try {
+    localStorage.setItem(KEY, JSON.stringify(project))
+    $('msg').textContent = '已写入，正在打开编辑台…'
+    $('msg').className = 'msg ok'
+    setTimeout(() => { location.href = '/?_=' + Date.now() }, 500)
+  } catch (e) {
+    $('msg').textContent = '写入失败：' + e.message
+    $('msg').className = 'msg err'
+  }
+})
+</script>
+</body>
+</html>

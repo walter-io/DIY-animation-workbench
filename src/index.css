@@ -1,0 +1,99 @@
+:root {
+  /* 基础黑白灰科技感令牌，后续可按品牌替换 */
+  --stage-bg: #0b0b0d;
+  --stage-surface: rgba(255, 255, 255, 0.06);
+  --stage-surface-strong: rgba(255, 255, 255, 0.1);
+  --stage-text: #f5f5f7;
+  --stage-text-muted: rgba(245, 245, 247, 0.55);
+  --stage-border: rgba(255, 255, 255, 0.12);
+  --stage-accent: #ffffff;
+  --stage-grid: rgba(255, 255, 255, 0.04);
+
+  --ui-bg: #151519;
+  --ui-panel: #1c1c21;
+  --ui-panel-hover: #232329;
+  --ui-text: #eaeaec;
+  --ui-text-muted: #8e8e96;
+  --ui-border: #2c2c33;
+  --ui-accent: #ffffff;
+  --ui-accent-soft: rgba(255, 255, 255, 0.12);
+  /* 面板强调色：UI 专用的彩色（对齐深色皮肤的画布强调色冰蓝 #5ac8fa）。
+     --ui-accent 是纯白、且被 19 处复用，不适合改色；
+     这一组只服务参数面板的滑竿 / 选中态 / 聚焦环等需要"有颜色"的控件。 */
+  --ui-accent-color: #5ac8fa;
+  --ui-accent-color-soft: rgba(90, 200, 250, 0.18);
+  --ui-on-accent: #06121b;
+  /* 下拉框箭头（替换系统箭头，颜色跟随主题的文字弱化色） */
+  --ui-select-arrow: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1.5 5 5 9 1.5' fill='none' stroke='%238e8e96' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  font-family: var(--font-sans);
+  color: var(--ui-text);
+  background: var(--ui-bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 浅色 UI 主题：随皮肤 ui:'light' 切换 */
+.ui-light {
+  --ui-bg: #eceef2;
+  --ui-panel: #f7f8fa;
+  --ui-panel-hover: #e4e7ec;
+  --ui-text: #1a1c20;
+  --ui-text-muted: #6b6f78;
+  --ui-border: #d3d7df;
+  --ui-accent: #1a1c20;
+  --ui-accent-soft: rgba(26, 28, 32, 0.1);
+  --ui-accent-color: #0f8fc9;
+  --ui-accent-color-soft: rgba(15, 143, 201, 0.15);
+  --ui-on-accent: #ffffff;
+  --ui-select-arrow: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1.5 5 5 9 1.5' fill='none' stroke='%236b6f78' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-border) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ui-border);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ui-text-muted);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+input,
+button,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}

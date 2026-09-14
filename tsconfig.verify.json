@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "ignoreDeprecations": "6.0",
+    "outDir": ".verify-out",
+    "rootDir": "src",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": false,
+    "types": []
+  },
+  "include": ["src/subtitleTrack.ts", "src/srt.ts", "src/cardOpacity.ts", "src/types.ts"]
+}

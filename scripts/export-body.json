@@ -1,0 +1,18 @@
+{
+  "project": {
+    "name": "prores-verify",
+    "skin": "dark",
+    "style": "glass",
+    "font": "sans",
+    "fps": 6,
+    "duration": 1,
+    "layout": "edit",
+    "instances": [
+      { "id": "i1", "effectId": "kpi-card", "name": "KPI", "start": 0, "duration": 1, "slot": "left", "params": { "label": "核心指标", "target": 35800, "suffix": "", "unit": "", "trend": "up" } },
+      { "id": "i2", "effectId": "ring-card", "name": "环形", "start": 0, "duration": 1, "slot": "right", "params": { "label": "转化率", "pct": 64, "sub": "较上期提升" } }
+    ]
+  },
+  "fps": 6,
+  "format": "mov",
+  "transparent": true
+}
