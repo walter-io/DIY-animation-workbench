@@ -5,6 +5,11 @@ import type { Params } from '../types'
 export type PresetScene = { name: string; params: Params }
 
 export const hfPresets: Record<string, PresetScene[]> = {
+  'bar-chart-grow': [
+    { name: "AI 提效", params: {"title":"AI 工作流效率对比","subtitle":"不同环节平均耗时（分钟）","labels":"资料收集,结构整理,初稿生成,人工校对","values":"42,28,16,24","colors":"#B8ADA2,#FF5A36,#FF5A36,#D8CEC4","accent":"#FF5A36","background":"#12100E","foreground":"#F4EFE7"} },
+    { name: "默认示例", params: {"title":"2024 年度业绩","subtitle":"各部门季度销售额对比","labels":"Q1,Q2,Q3,Q4,全年","values":"45,72,58,91,85","colors":"#FF5A36,#FF5A36,#B8ADA2,#FF5A36,#D8CEC4","accent":"#FF5A36","background":"#12100E","foreground":"#F4EFE7"} },
+    { name: "业务增长", params: {"title":"四季度线索增长","subtitle":"每季度有效咨询量","labels":"Q1,Q2,Q3,Q4","values":"320,460,610,880","colors":"#B8ADA2,#D8CEC4,#FF8A70,#FF5A36","accent":"#FF5A36","background":"#12100E","foreground":"#F4EFE7"} },
+  ],
   'before-after-stat': [
     { name: "AI 提效", params: {"label":"整理一份研究资料","beforeLabel":"手动处理","beforeValue":180,"afterLabel":"AI 协作","afterValue":45,"unit":"分钟","conclusion":"重复整理环节减少 75%","accent":"#FF5A36","foreground":"#F4EFE7"} },
     { name: "默认示例", params: {"label":"做一条知识视频","beforeLabel":"过去","beforeValue":12,"afterLabel":"现在","afterValue":3,"unit":"小时","conclusion":"流程被压缩到原来的 1/4","accent":"#FF5A36","foreground":"#F4EFE7"} },
@@ -20,10 +25,25 @@ export const hfPresets: Record<string, PresetScene[]> = {
     { name: "默认示例", params: {"title":"为什么效率会提升？","cause":"重复动效被模板化","mechanism":"只修改文案和数据","result":"新视频能快速生成","accent":"#FF5A36","foreground":"#F4EFE7"} },
     { name: "业务增长", params: {"title":"为什么转化率会上升？","cause":"首屏价值更清晰","mechanism":"用户更快理解下一步","result":"有效行动明显增加","accent":"#FF5A36","foreground":"#F4EFE7"} },
   ],
+  'checklist-pop': [
+    { name: "AI 提效", params: {"title":"把任务交给 Agent 前","item1":"目标和交付物已经说清楚","item2":"相关文件和背景已经提供","item3":"验收标准可以实际检查","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "默认示例", params: {"title":"上线前检查","item1":"默认文案能直接生成视频","item2":"透明 MOV 可以叠到剪辑里","item3":"模板能通过修改数据复用","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "业务增长", params: {"title":"增长实验上线前","item1":"核心指标已经定义","item2":"对照组和实验组可区分","item3":"观察周期足够判断结果","accent":"#FF5A36","foreground":"#F4EFE7"} },
+  ],
   'concept-spotlight': [
     { name: "AI 提效", params: {"label":"核心概念","term":"工作流自动化","definition":"不是让 AI 包办全部工作，而是把重复步骤交给系统稳定执行。","note":"适合解释 AI / 自动化 / Agent","accent":"#FF5A36","foreground":"#F4EFE7"} },
     { name: "默认示例", params: {"label":"核心概念","term":"提示词工程","definition":"不是把问题说复杂，而是把目标、约束和判断标准说清楚。","note":"适合解释术语 / 方法 / 心智模型","accent":"#FF5A36","foreground":"#F4EFE7"} },
     { name: "业务增长", params: {"label":"增长概念","term":"复购率","definition":"在一定周期内，完成首次购买的用户再次产生购买的比例。","note":"适合解释指标 / 口径 / 商业概念","accent":"#FF5A36","foreground":"#F4EFE7"} },
+  ],
+  'horizontal-bar-compare': [
+    { name: "AI 提效", params: {"title":"两种写稿方式对比","itemA":"完全手动","valueA":38,"itemB":"AI 协作","valueB":82,"unit":"%","caption":"AI 更适合承担资料聚合、结构整理和初稿生成。","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "默认示例", params: {"title":"两种方法的效率差距","itemA":"传统整理","valueA":42,"itemB":"AI 辅助","valueB":86,"unit":"%","caption":"AI 辅助在资料聚合和初稿生成阶段优势更明显。","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "业务增长", params: {"title":"两个渠道的转化差距","itemA":"自然流量","valueA":27,"itemB":"精准投放","valueB":64,"unit":"%","caption":"精准投放带来的用户意向更明确，后续转化也更稳定。","accent":"#FF5A36","foreground":"#F4EFE7"} },
+  ],
+  'key-point-marker': [
+    { name: "AI 提效", params: {"kicker":"关键判断","point":"先把重复动作做成模板，再让 AI 帮你批量调用。","source":"工作流设计 / Agent 协作","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "默认示例", params: {"kicker":"记住这一点","point":"真正拉开差距的不是工具，而是你拆问题的能力。","source":"适合结论句 / 金句 / 操作提醒","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "业务增长", params: {"kicker":"增长提醒","point":"真正健康的增长，必须同时看新增、转化和复购。","source":"经营复盘 / 数据结论","accent":"#FF5A36","foreground":"#F4EFE7"} },
   ],
   'line-chart-draw': [
     { name: "AI 提效", params: {"title":"内容生产耗时变化","subtitle":"接入 AI 工作流后的 8 周","labels":"第1周,第2周,第3周,第4周,第5周,第6周,第7周,第8周","values":"12,11,9,8,6,5,4,3","accent":"#FF5A36","background":"#12100E","foreground":"#F4EFE7"} },
@@ -45,10 +65,40 @@ export const hfPresets: Record<string, PresetScene[]> = {
     { name: "默认示例", params: {"title":"累计用户数","targetValue":1285000,"prefix":"","suffix":"+","note":"突破百万里程碑，持续增长中","accent":"#FF5A36","background":"#12100E","foreground":"#F4EFE7"} },
     { name: "业务增长", params: {"title":"累计有效用户","targetValue":50000,"prefix":"","suffix":"+","note":"连续三个季度保持稳定增长","accent":"#FF5A36","background":"#12100E","foreground":"#F4EFE7"} },
   ],
+  'number-impact': [
+    { name: "AI 提效", params: {"hero":"快","label":"重复任务自动化","value":72,"unit":"%","caption":"时间被重新释放","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "默认示例", params: {"hero":"汉","label":"体感湿度","value":100,"unit":"%","caption":"接近饱和","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "业务增长", params: {"hero":"增","label":"季度有效咨询","value":68,"unit":"%","caption":"增长进入加速区","accent":"#FF5A36","foreground":"#F4EFE7"} },
+  ],
+  'source-citation-card': [
+    { name: "AI 提效", params: {"source":"数据来源：团队工作流记录","date":"2026.08","claim":"引入模板复用后，平均初稿时间明显缩短","value":72,"unit":"%","note":"统计口径：连续 30 条知识类视频的制作记录。","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "默认示例", params: {"source":"数据来源：项目复盘记录","date":"2026.07","claim":"模板化之后，重复动效制作时间明显下降","value":68,"unit":"%","note":"统计口径：同类型知识视频中的数据展示片段。","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "业务增长", params: {"source":"数据来源：季度经营复盘","date":"2026 Q2","claim":"老客复购成为本季度最主要的收入增量","value":44,"unit":"%","note":"统计口径：已完成支付的订单收入，不含退款。","accent":"#FF5A36","foreground":"#F4EFE7"} },
+  ],
+  'stat-duel': [
+    { name: "AI 提效", params: {"leftLabel":"手动制作","leftValue":12,"leftUnit":"小时","rightLabel":"AI + 模板","rightValue":3,"rightUnit":"小时","operator":">","verdict":"重复制作时间减少 75%","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "默认示例", params: {"leftLabel":"上海 SHANGHAI","leftValue":92,"leftUnit":"%","rightLabel":"亚马逊 AMAZON","rightValue":90,"rightUnit":"%","operator":">","verdict":"上海湿度更高","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "业务增长", params: {"leftLabel":"旧版转化率","leftValue":24,"leftUnit":"%","rightLabel":"新版转化率","rightValue":41,"rightUnit":"%","operator":"<","verdict":"新版流程提升 17 个百分点","accent":"#FF5A36","foreground":"#F4EFE7"} },
+  ],
   'status-split': [
     { name: "AI 提效", params: {"leftTitle":"每次从零开始","leftTag":"单次制作","rightTitle":"调用现成模板","rightTag":"系统复用","connector":"升级","accent":"#FF5A36","foreground":"#F4EFE7"} },
     { name: "默认示例", params: {"leftTitle":"往年常规","leftTag":"稳定期","rightTitle":"2026 异常","rightTag":"高温 · 潮湿","connector":"转向","accent":"#FF5A36","foreground":"#F4EFE7"} },
     { name: "业务增长", params: {"leftTitle":"流量快速上涨","leftTag":"增长期","rightTitle":"转化开始承压","rightTag":"瓶颈期","connector":"进入","accent":"#FF5A36","foreground":"#F4EFE7"} },
+  ],
+  'three-step-flow': [
+    { name: "AI 提效", params: {"title":"让 Agent 执行任务的三步","step1":"说明目标","desc1":"先说清想要什么","step2":"给出材料","desc2":"提供文件和上下文","step3":"验收结果","desc3":"检查真实可用性","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "默认示例", params: {"title":"把知识讲清楚的三步","step1":"定义问题","desc1":"先说它解决什么","step2":"拆开机制","desc2":"再讲为什么成立","step3":"给出动作","desc3":"最后落到怎么做","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "业务增长", params: {"title":"提高转化率的三步","step1":"找到流失点","desc1":"确认用户卡在哪里","step2":"缩短路径","desc2":"删除不必要的动作","step3":"持续验证","desc3":"用数据检查变化","accent":"#FF5A36","foreground":"#F4EFE7"} },
+  ],
+  'timeline-scan': [
+    { name: "AI 提效", params: {"title":"AI 工作流进化路径","time1":"01","label1":"单次对话","time2":"02","label2":"固定提示词","time3":"03","label3":"自动化系统","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "默认示例", params: {"title":"从想法到系统","time1":"01","label1":"做一次","time2":"02","label2":"存模板","time3":"03","label3":"反复生成","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "业务增长", params: {"title":"产品增长三个阶段","time1":"Q1","label1":"验证需求","time2":"Q2","label2":"提升转化","time3":"Q3","label3":"扩大复购","accent":"#FF5A36","foreground":"#F4EFE7"} },
+  ],
+  'top-rank-list': [
+    { name: "AI 提效", params: {"title":"最适合交给 AI 的 Top 3","rank1":"资料归纳","value1":46,"rank2":"结构整理","value2":33,"rank3":"格式转换","value3":21,"unit":"%","caption":"优先自动化规则明确、重复频率高的工作。","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "默认示例", params: {"title":"影响效率的 Top 3 因素","rank1":"资料分散","value1":48,"rank2":"缺少模板","value2":31,"rank3":"反复改稿","value3":21,"unit":"%","caption":"真正拖慢生产的，往往不是创意，而是重复整理和重复决策。","accent":"#FF5A36","foreground":"#F4EFE7"} },
+    { name: "业务增长", params: {"title":"新增收入来源 Top 3","rank1":"老客复购","value1":44,"rank2":"新产品","value2":35,"rank3":"渠道合作","value3":21,"unit":"%","caption":"增长不是来自单一爆点，而是三条路径共同贡献。","accent":"#FF5A36","foreground":"#F4EFE7"} },
   ],
   'turning-point-line': [
     { name: "AI 提效", params: {"title":"效率提升的关键拐点","subtitle":"不是第一次使用 AI，而是开始沉淀模板之后","pointLabel":"建立模板库","caption":"从这一刻开始，重复工作才真正被系统接管。","accent":"#FF5A36","foreground":"#F4EFE7"} },

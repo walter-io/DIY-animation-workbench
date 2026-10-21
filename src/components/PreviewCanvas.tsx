@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useEditor, usePlayhead, subtitleRenderParams } from '../store'
 import { skins, styleOptions, fontOptions, paletteVars } from '../themes'
 import { cardSizeScale } from '../cardSize'
+import { projectCanvasBg } from '../canvasBg'
 import { isSubtitle } from '../subtitleTrack'
 import type { CardFit, ImageClip, Instance, MediaAsset, Palette } from '../types'
 import { defaultFitFor } from '../hyperframes/modes'
@@ -968,7 +969,8 @@ export default function PreviewCanvas({
     fontFamily,
     fontWeight: project.font === 'sans' ? 700 : undefined,
     ...({ '--stage-card-opacity': String(project.cardOpacity) } as React.CSSProperties),
-    background: alpha ? 'transparent' : `${skin.canvasVars['--stage-bg']}`,
+    // 画布背景：工程级设置（跟随主题 / 米白 / 白 / 黑 / 自定义），透明导出时不画
+    background: alpha ? 'transparent' : projectCanvasBg(project, `${skin.canvasVars['--stage-bg']}`),
   }
 
   const showVideo = videoUrl != null && videoVisible && !alpha

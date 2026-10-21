@@ -4,9 +4,10 @@ import { skinList, styleOptions, fontOptions, themePresets, matchPresetId } from
 import type { Palette } from '../types'
 import { alphaToTransparency, transparencyPercent, transparencyToAlpha } from '../cardOpacity'
 import { CARD_SIZE_OPTIONS, DEFAULT_CARD_SIZE } from '../cardSize'
+import { CANVAS_BG_OPTIONS } from '../canvasBg'
 import { serializeProject } from '../mediaPersistence'
 import { isSubtitle } from '../subtitleTrack'
-import { DEFAULT_SFX_ID, DEFAULT_SFX_VOLUME, SFX_MUTED, getSfxVersion, playSfx, sfxOptions, subscribeSfx, type SfxId } from '../sfx'
+import { DEFAULT_SFX_ID, DEFAULT_SFX_VOLUME, getSfxVersion, playSfx, sfxOptions, subscribeSfx, type SfxId } from '../sfx'
 
 const PALETTE_FIELDS: { key: keyof Palette; name: string; hint: string }[] = [
   { key: 'accent', name: '主色', hint: '标题、强调、关键线条' },
@@ -253,6 +254,35 @@ export default function TopBar({
               <div className="os-dd-note-block">
                 只作用于「没有单独调过尺寸」的卡：铺满画布的卡不走这一档，单卡在右侧参数面板里调过「整体缩放」或手动拖拽缩放过的也以自己的为准。
               </div>
+              <div className="os-dd-title">画布背景</div>
+              <div className="os-swatch-grid">
+                {CANVAS_BG_OPTIONS.map((b) => (
+                  <button
+                    key={b.id}
+                    className={`os-swatch-btn ${(project.canvasBg ?? 'auto') === b.id ? 'active' : ''}`}
+                    type="button"
+                    title={b.hint}
+                    style={b.id === 'custom' && project.canvasBgColor ? { background: project.canvasBgColor } : { background: b.swatch }}
+                    onClick={() => dispatch({ type: 'setCanvasBg', bg: b.id })}
+                  >
+                    {b.name}
+                  </button>
+                ))}
+              </div>
+              <div className="os-dd-note-block">
+                整块画布（成片）的底色，改一处整片都变，非透明导出也会带上。米白 = 解说知识卡默认的纸感底。
+              </div>
+              {(project.canvasBg ?? 'auto') === 'custom' && (
+                <label className="os-dd-row" title="自定义画布底色">
+                  自定义色
+                  <input
+                    type="color"
+                    value={project.canvasBgColor ?? '#f4f5f7'}
+                    onChange={(e) => dispatch({ type: 'setCanvasBg', bg: 'custom', color: e.target.value })}
+                  />
+                  <span>{project.canvasBgColor ?? '#f4f5f7'}</span>
+                </label>
+              )}
               <div className="os-dd-label">主题</div>
               <div className="os-swatch-grid">
                 {skinList.map((s) => (
@@ -357,12 +387,10 @@ export default function TopBar({
                 </button>
               </div>
               <div className="os-dd-note-block">
-                {SFX_MUTED
-                  ? '本版本不发声：开关、音量、默认音效都会保存，卡片上的配置也留得住，但预览与导出都不出声。'
-                  : project.sfxEnabled === false
-                    ? '总开关：已关。预览与导出都不出声（导出不烤音轨），卡片上配好的音效都留着，一键就能开回来。'
-                    : '总开关：开。动效卡出现时会发声，导出也会混成一条音轨烤进成片。'}
-                {!SFX_MUTED && '只在这里改一次，全片生效。'}
+                {project.sfxEnabled === false
+                  ? '总开关：已关。预览与导出都不出声（导出不烤音轨），卡片上配好的音效都留着，一键就能开回来。'
+                  : '总开关：开。动效卡出现时会发声，导出也会混成一条音轨烤进成片。'}
+                只在这里改一次，全片生效。
               </div>
               <div className="os-dd-label">
                 默认音效
@@ -403,9 +431,7 @@ export default function TopBar({
                 <span>{Math.round((project.sfxVolume ?? DEFAULT_SFX_VOLUME) * 100)}%</span>
               </div>
               <div className="os-dd-note-block">
-                {SFX_MUTED
-                  ? '音效设置会随工程保存（换有声版本时原样生效），本版本不播放声音。口播字幕默认不配音效。'
-                  : '音效只在播放时出声（拖播放头不响），导出会混成一条音轨烤进成片。口播字幕默认不发音效。'}
+                音效只在播放时出声（拖播放头不响），导出会混成一条音轨烤进成片。口播字幕默认不发音效。
               </div>
               <div className="os-dd-title">画布方向</div>
               <div className="os-dd-seg">

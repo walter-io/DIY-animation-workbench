@@ -7,6 +7,16 @@ import type { SfxId } from './sfx'
 export type SkinId = 'dark' | 'light'
 export type StyleId = 'glass' | 'flat'
 export type FontId = 'sans' | 'serif'
+
+/**
+ * 画布（整片）背景色：工程级设置，作用于整块画布而非单张卡。
+ *  - auto   跟随主题底色（老工程的行为）
+ *  - cream  米白（解说知识卡的纸感底）
+ *  - white  纯白
+ *  - black  近黑
+ *  - custom 自定义色（取 canvasBgColor）
+ */
+export type CanvasBgId = 'auto' | 'cream' | 'white' | 'black' | 'custom'
 export type SlotId = 'left' | 'right' | 'center' | 'bottom' | 'top'
 
 /**
@@ -405,6 +415,14 @@ export type EffectProps = {
   isPreview?: boolean
 }
 
+/**
+ * 动效库归属：
+ *  - regular 常规库：局部效果卡，直接叠加在有人物的口播画面上
+ *  - explain 解说库：知识解说类整页卡（像播放一页好看的 PPT），配合出镜小窗使用
+ * 缺省按 regular 处理 —— 存量卡与拓展包卡不用改，自动归常规库。
+ */
+export type EffectLib = 'regular' | 'explain'
+
 export type EffectDef = {
   id: string
   name: string
@@ -414,6 +432,8 @@ export type EffectDef = {
   component: ComponentType<EffectProps>
   schema: ParamSchema[]
   defaultParams: Params
+  /** 归属哪个库：常规（默认）/ 解说。动效库面板按它分页签 */
+  lib?: EffectLib
   /** true = 运行时挂载进来的插件卡（拓展包 / 外部注入），不是仓库内置的 */
   plugin?: boolean
   /**
@@ -456,6 +476,13 @@ export type Project = {
   font: FontId
   /** 工程主题色：所有未单独设置强调色的卡片都跟随它 */
   palette: Palette
+  /**
+   * 画布（整片）背景色。未设置 = 跟随主题底色（老工程行为）。
+   * 改这一处整片背景跟着变，预览与非透明导出都生效。
+   */
+  canvasBg?: CanvasBgId
+  /** canvasBg = 'custom' 时的自定义色值（CSS 颜色字符串） */
+  canvasBgColor?: string
   /** 主持视频（出镜画面）的布局与外观；视频文件本身不进工程，只存引用名 */
   host: HostConfig
   /** 机位轨道：按时间段切换出镜布局。空数组 = 全程用 host.layout */

@@ -1,0 +1,31 @@
+{
+  "id": "示例包",
+  "name": "示例包 · 音效",
+  "version": "1.0.0",
+  "vendor": "DIY动效编辑台",
+  "description": "演示用的音效包：2 个音效。删掉这个文件夹就从音效下拉里消失，拷回来就恢复。",
+  "product": {
+    "contact": "",
+    "homepage": ""
+  },
+  "sounds": [
+    {
+      "id": "crystalTap",
+      "name": "晶体轻点",
+      "hint": "清脆的点触声，适合小元件出现",
+      "duration": 0.62,
+      "src": "crystal-tap.mp3",
+      "level": 0.85,
+      "group": "示例包"
+    },
+    {
+      "id": "softRiser",
+      "name": "缓慢上扬",
+      "hint": "短促上扬的转场声",
+      "duration": 1.1,
+      "src": "soft-riser.mp3",
+      "level": 0.75,
+      "group": "示例包"
+    }
+  ]
+}

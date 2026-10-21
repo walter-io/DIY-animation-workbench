@@ -9,9 +9,18 @@ export type AutoCardSuggestion = {
   params: Record<string, string | number | boolean>
   /** 该段在成片里承担的作用（open 开场 / body 论述 / end 收尾） */
   role?: 'open' | 'body' | 'end'
+  /** 来自哪个卡库：常规（叠加小卡）/ 解说（整页幻灯片） */
+  lib?: AutoCardLib
   /** 导演信息：记录内容依据，供 lint 校验（数字必须来自字幕） */
   director: DirectorInfo
 }
+
+/**
+ * 自动出卡用的卡库。
+ *  - regular 常规库：贴在人像口播上的局部小卡，一页一条信息
+ *  - explain 解说库：整页幻灯片（PPT 式），同一页要塞下更多同类信息
+ */
+export type AutoCardLib = 'regular' | 'explain'
 
 /** 构造导演信息：必含 = 卡内出现的关键信息，禁含 = 口播没有的额外数字/标签 */
 function makeDirector(
@@ -226,12 +235,27 @@ type ChunkFeatures = {
   tools: string[]
   headline: string
   role: Role
+  /** 段序号（第几页），章节页用它当章号 */
+  index: number
   /** 段时长（秒） */
   duration: number
   /** 强信号：显式结构标记，能独立触发结构卡 */
   strong: Set<SignalName>
   /** 弱信号：口语连接词，只加分 */
   weak: Set<SignalName>
+  /**
+   * 段内显式"第N步"标记的个数。
+   *
+   * ⚠️ 必须从**原始字幕**数，不能从 f.phrases 里筛。
+   * cuesToPhrases 会把逗号切开，而"第一步"这种 3 字标记会在净化时被当碎片丢掉，
+   * 从 phrases 里筛永远筛不到 —— 步骤卡会误判成"这一段没有步骤"。
+   */
+  steps: number
+  /**
+   * 段内的步骤名（"第N步"之后到第一个逗号为止）。
+   * 直接抽好，不要让卡片自己从句子里挑 —— 见 stepTextsOf 的说明。
+   */
+  stepTexts: string[]
   /** 是否有某强信号 */
   has: (n: SignalName) => boolean
   /** 信息价值分：决定这一段**值不值得**出卡 */
@@ -244,7 +268,7 @@ type ChunkFeatures = {
   avgLen: number
 }
 
-export function featuresOf(cues: SrtCue[], role: Role): ChunkFeatures {
+export function featuresOf(cues: SrtCue[], role: Role, index = 0): ChunkFeatures {
   const phrases = cuesToPhrases(cues)
   const text = cuesToText(cues) || cues.map((c) => c.text).join(' ')
   // 原始文本：保留标点。实体识别必须用原文——
@@ -292,6 +316,9 @@ export function featuresOf(cues: SrtCue[], role: Role): ChunkFeatures {
     tools,
     headline: pickHeadline(phrases, phrases[0] ?? '本期要点'),
     role,
+    index,
+    steps: (rawText.match(/第[一二三四五六]步/g) ?? []).length,
+    stepTexts: stepTextsOf(rawText),
     duration,
     strong,
     weak,
@@ -343,6 +370,14 @@ export function salienceOf(f: ChunkFeatures): number {
 const SALIENCE_GATE = 3
 
 /**
+ * 解说档的门控线：比常规档低。
+ * 常规卡是"贴在画面上的小卡"，少出几张只是画面安静一点；
+ * 解说页是**整页幻灯片**，跳过一段就会让上一页一直挂着，观众盯着空页十几秒。
+ * 所以宁可多出一页内容偏轻的「关键词页」，也不能留空。
+ */
+const SALIENCE_GATE_EXPLAIN = 1
+
+/**
  * 挑最适合当"清单项"的短语。
  *
  * 关键：优先**并列的短词**（"项目 / 领域 / 资源"），而不是开头的几个整句。
@@ -358,17 +393,105 @@ function listItems(f: ChunkFeatures, max = 4, len = 16): string[] {
 
 /** 去掉"引导句"和"互动句"，只留真正的内容短语（供要点类卡片填内容） */
 function contentPhrases(f: ChunkFeatures, max = 4, len = 18): string[] {
+  // "说完/讲完/看完…" 是最常见的过渡句开头（"好，说完它能做什么，我们来看…"），
+  // 不丢掉的话它会混进对比页左栏、还会被当成左栏标题。
   const DROP =
-    /^(?:最后|那么|接着|接下来|然后|好|好吧|以上|觉得|记得|关注|点赞|收藏|转发|订阅|下期|我们|总结|总结一下|结论|记住|所以|其实|这|那)/
+    /^(?:最后|那么|接着|接下来|然后|好|好吧|以上|觉得|记得|关注|点赞|收藏|转发|订阅|下期|我们|总结|总结一下|结论|记住|所以|其实|说完|讲完|看完|先说|但你注意|你注意|大家注意|这|那)/
   const kept = f.phrases.filter((p) => !DROP.test(p))
   return (kept.length ? kept : f.phrases).slice(0, max).map((p) => clip(p, len))
+}
+
+/**
+ * 解说页的清单项：同一页要比常规卡多装一倍同类信息。
+ *
+ * 常规卡一页最多 3~4 条（`listItems` 默认 4），而解说页是整页幻灯片，
+ * 清单页排版能放到 6 行、标签页 8 个 —— 所以这里不砍短语，先取够再筛。
+ * 仍然优先并列短词（"项目 / 领域 / 资源"），短词不够才用整句，
+ * 否则"我一般会用三类标签，项目、领域、资源"这种句子会把真正的三项挤掉。
+ */
+function exList(f: ChunkFeatures, max: number, len: number): string[] {
+  const content = contentPhrases(f, max + 2, len)
+  const short = content.filter((p) => p.length <= 8)
+  const pick = short.length >= Math.min(3, max) ? short : content
+  return pick.slice(0, max)
+}
+
+/**
+ * 从"传统搜索是把已有的网页排个序丢给你"里取出栏目标题（"是"之前的 2~8 字）。
+ * 对比页左右两栏需要两个并排的对象名，段里没有英文产品名时（纯中文概念对比），
+ * 这是唯一可靠的取法 —— 否则只能填"以前 / 现在"这种占位文案。
+ */
+function subjectOf(phrase: string | undefined): string {
+  const m = String(phrase ?? '').match(/^([^，。！？、]{2,8})是/)
+  return m ? m[1] : ''
+}
+
+/** 名次标记：排名页的条目必须从这里取 */
+const RANK_MARK = /第[一二三四五六](?:梯队|档|批|名)|优先考虑|优先使用|排名/
+
+/**
+ * 排名 / 梯队页的条目。
+ *
+ * ⚠️ 不能只取英文实体：口播里的名次常常挂在中文名上
+ * （"第一梯队是混元四"），而实体识别只认识拉丁词 ——
+ * 直接 `f.tools` 会让第一梯队凭空消失，只留下 Kimi K3、豆包两条。
+ * 所以优先取**带名次标记的短句**（名次信息就在这几条里），
+ * 没有标记时才退回实体列表 / 通用短语。
+ */
+function rankItems(f: ChunkFeatures, max = 6, len = 22): string[] {
+  const marked = withoutHeadline(
+    f.phrases.filter((p) => RANK_MARK.test(p)).map((p) => clip(p, len)),
+    f,
+  )
+  if (marked.length >= 2) return dedupeTier(marked).slice(0, max)
+  if (f.tools.length >= 3) return f.tools.slice(0, max)
+  return exList(f, max, len)
+}
+
+/** 页面标题不该同时出现在内容里（"我的排名是这样的"当标题又当第一条 = 重复一遍） */
+function withoutHeadline(items: string[], f: ChunkFeatures): string[] {
+  return items.filter((s) => s && s !== f.headline && !f.headline.includes(s))
+}
+
+/**
+ * 同一档位只留一条。
+ * 口播说"优先考虑第一梯队"时会被断句切成「优先考虑」+「第一梯队」，
+ * 于是页面上会先出现完整档位（第一梯队是混元四）、末尾又冒出半条（第一梯队）。
+ * 先出现的完整信息就是正主，后面重复档位的丢掉。
+ */
+function dedupeTier(items: string[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const it of items) {
+    const tier = it.match(/第[一二三四五六](?:梯队|档|批|名)/)?.[0] ?? ''
+    if (tier) {
+      if (seen.has(tier)) continue
+      seen.add(tier)
+    }
+    out.push(it)
+  }
+  return out
 }
 
 /** 疑问句 / 设问——开场点题句最常见的形态（"这么多模型该选哪一个"） */
 const QUESTION = /[?？]|怎么|如何|为什么|哪[一个些]|该(?:怎么|如何)?(?:选|用)|多少|要不要|值不值/
 
-/** "第N步"标记：步骤卡的内容必须从带这个标记的短语里取 */
-const STEP_MARK = /第[一二三四五六]步|第一步|第二步|第三步|第四步/
+/**
+ * 抽出步骤名：取"第N步"之后、第一个逗号之前的那一小段。
+ *
+ * 口播讲步骤时，步骤名就写在标记后面的第一个逗号里
+ * （"第一步，先跟它说清楚目标，别上来就问怎么做"），后面那半句是补充说明。
+ * 不能靠 phrases 来切：逗号会把一句话拆成两条短语，
+ * 于是"别上来就问怎么做"会被当成**第二步**（实测步骤页多出一个假步骤）。
+ */
+function stepTextsOf(rawText: string): string[] {
+  const out: string[] = []
+  for (const m of rawText.matchAll(/第[一二三四五六]步[，,、]?\s*([^，,。！？、\s]{2,14})/g)) {
+    const t = m[1].trim()
+    if (t && !out.includes(t)) out.push(t)
+  }
+  return out
+}
 
 const clampPct = (v: number) => Math.max(0, Math.min(100, Math.round(v)))
 
@@ -642,10 +765,10 @@ const CANDIDATES: Candidate[] = [
     // 把"千问跟腾讯是老对手 → 不可能给对手宣传"这种因果说明做成了两步流程卡。
     score: (f) => (f.has('steps') ? 13 : 0),
     build: (f) => {
-      // 步骤卡的内容必须从"第N步"那几条短语里取，不能拿 phrases[0..n] 顶上，
-      // 否则"这样一套下来"这种随口一句会被当成第 2 步。
-      const marked = f.phrases.filter((p) => STEP_MARK.test(p))
-      const list = (marked.length >= 2 ? marked : contentPhrases(f, 4, 18)).slice(0, 4)
+      // 步骤名直接用抽取好的 stepTexts（"第N步，XXX"里的 XXX）。
+      // 退回 contentPhrases 时它已经会丢掉"最后/那么/接着"这类引导句，
+      // 所以"这样一套下来"不会像以前那样被当成第 2 步。
+      const list = (f.stepTexts.length >= 2 ? f.stepTexts : contentPhrases(f, 4, 18)).slice(0, 4)
       // 标题如果就是某一条步骤，说明这一段的点题句没抓到，退回固定标题，
       // 免得标题写着"用Kimi K3读文档"、下面又列一遍三步
       const t = list.some((s) => s === f.headline || f.headline.includes(s) || s.includes(f.headline))
@@ -701,11 +824,9 @@ const CANDIDATES: Candidate[] = [
     score: (f) =>
       (f.has('enum') ? 11 : 0) + (f.has('rank') ? 6 : 0) + (f.weak.has('enum') ? 1 : 0),
     build: (f) => ({
-      // 报排名时，名次就是段里出现的模型名本身
-      // （GLM5.3 → GLM5.2 → 混元4 → deepseek v4 pro → …）。
-      // 直接取实体比从句子里挑靠谱得多——"积分充足情况下"这种前提条件
-      // 会被当成一项混进名次表里，真正的名次反而被挤出前 4 个位置。
-      items: (f.has('rank') && f.tools.length >= 2 ? f.tools.slice(0, 6) : listItems(f, 4, 16))
+      // 带名次标记的短句优先（"第一梯队是混元四"）——名次挂在中文名上时，
+      // 只取英文实体会把整档弄丢（见 rankItems）。没有标记才退回通用短语。
+      items: (f.has('rank') ? rankItems(f, 6, 16) : listItems(f, 4, 16))
         .map((s, i) => `${String(i + 1).padStart(2, '0')}|${s}`)
         .join('\n'),
     }),
@@ -907,6 +1028,261 @@ const CANDIDATES: Candidate[] = [
 ]
 
 /**
+ * 解说库候选卡表（知识解说视频专用）。
+ *
+ * 与常规库的三点差别：
+ *  1. 全是 ex- 前缀的**整页幻灯片**卡，一页就是一张画面，不跟人像抢位置；
+ *  2. 同一页装得更多 —— 清单 6 条 / 步骤 5 格 / 标签 8 个 / 对比左右各 5 条；
+ *  3. 兜底卡（标签页）带正基础分，保证每个有内容的段落都有一页，
+ *     不会像常规库那样出现"这段没卡 → 画面空着"。
+ */
+const EXPLAIN_CANDIDATES: Candidate[] = [
+  // ===== 开场 =====
+  {
+    effectId: 'ex-title-slide',
+    name: '解说·标题页',
+    roles: ['open'],
+    score: (f) => 10 + (QUESTION.test(f.headline) ? 3 : 0),
+    build: (f) => {
+      // 三行都不重复：大标题 / 小字副标 / 结论药丸各取一条不同短语
+      const others = contentPhrases(f, 3, 26).filter((p) => p !== f.headline)
+      return {
+        eyebrow: '本期主题',
+        title: clip(f.headline, 16),
+        titleSub: others[0] ?? '',
+        pill: others[1] ?? '',
+      }
+    },
+  },
+
+  // ===== 收尾 =====
+  {
+    effectId: 'ex-end-slide',
+    name: '解说·结尾页',
+    roles: ['end'],
+    discardsData: true,
+    score: (f) =>
+      (f.has('cta') ? 12 : 0) + (contentPhrases(f, 3).length >= 2 ? 3 : 0) + (f.has('conclusion') ? 4 : 0),
+    build: (f) => ({
+      summary: clip(f.headline, 26),
+      cta: '关注我，下期继续',
+      sign: '',
+    }),
+  },
+  {
+    effectId: 'ex-key-point',
+    name: '解说·要点页',
+    roles: ['end', 'body'],
+    discardsData: true,
+    // 收成一句话：结论句 / 定义句最配这张卡
+    score: (f) =>
+      (f.has('conclusion') ? 9 : 0) +
+      (f.has('concept') ? 5 : 0) +
+      (f.headline.length <= 18 ? 2 : 0) +
+      (f.avgLen > 13 ? 2 : 0),
+    build: (f) => {
+      const others = contentPhrases(f, 2, 26).filter((p) => p !== f.headline)
+      return {
+        eyebrow: f.role === 'end' ? '最后一句' : '重点',
+        title: clip(f.headline, 14),
+        point: others[0] ?? '',
+      }
+    },
+  },
+
+  // ===== 论述段 =====
+  {
+    effectId: 'ex-steps-flow',
+    name: '解说·步骤页',
+    roles: ['body'],
+    drivenBy: ['steps'],
+    discardsData: true,
+    // 步骤必须显式说出"第一步/第二步"，否则会把手写因果说明做成流程页。
+    // 真的标了 2 个以上"第N步"时再抬一手：这种段一定也带着逗号并列，
+    // 清单页会靠 list 信号反超（17 分），把一套流程做成"编号列表"就丢了流程感。
+    score: (f) => {
+      if (!f.has('steps')) return 0
+      return f.steps >= 2 ? 20 : 14
+    },
+    build: (f) => {
+      // 步骤名同样直接取 stepTexts，一步一格，不会多出假步骤
+      const list = (f.stepTexts.length >= 2 ? f.stepTexts : exList(f, 5, 12)).slice(0, 5)
+      return {
+        eyebrow: '流程',
+        title: title(f, 14, '它是怎么跑起来的'),
+        steps: list.map((s) => clip(s, 12)).join('\n'),
+        footnote: '',
+      }
+    },
+  },
+  {
+    effectId: 'ex-versus',
+    name: '解说·对比页',
+    roles: ['body'],
+    // ⚠️ 有排名 / 并列 / 分类结构时一律退位。
+    // 反例："第一梯队是混元四…第二梯队是Kimi K3，最强…第三梯队是豆包，最便宜"
+    //   → compare 信号会被"最强/最便宜"点着，于是整段梯队排名被做成左右两栏对比，
+    //     而观众要看的恰恰是**三档名次**，应该出一张编号清单页。
+    score: (f) => {
+      if (!f.has('compare')) return 0
+      if (f.has('rank') || f.has('enum') || f.has('list') || f.has('classification')) return 0
+      return 13 + (f.tools.length >= 2 ? 3 : 0) + (f.pairs.length >= 2 ? 2 : 0)
+    },
+    build: (f) => {
+      const [a, b] = f.tools
+      const hit = (p: string, t: string) => !!t && p.toLowerCase().includes(t.toLowerCase())
+      let left = f.phrases.filter((p) => hit(p, a)).map((p) => clip(p, 16))
+      let right = f.phrases.filter((p) => hit(p, b)).map((p) => clip(p, 16))
+      let leftTitle = clip(a || '', 8)
+      let rightTitle = clip(b || '', 8)
+      // 段里没有英文产品名可抓（纯中文概念对比）时的兜底切分
+      if (!left.length && !right.length) {
+        const all = withoutHeadline(contentPhrases(f, 8, 16), f)
+        // 两条"X是…"就是天然的左右锚点（"传统搜索是…" / "大语言模型是…"），
+        // 按锚点切比"一刀切一半"可靠：切一半会把右栏的开场句落到左栏去。
+        const anchors = all
+          .map((p, i) => ({ p, i, s: subjectOf(p) }))
+          .filter((x) => x.s)
+        if (anchors.length >= 2) {
+          const cut = anchors[1].i
+          left = all.slice(0, cut)
+          right = all.slice(cut)
+          if (!leftTitle) leftTitle = clip(anchors[0].s, 8)
+          if (!rightTitle) rightTitle = clip(anchors[1].s, 8)
+        } else {
+          const half = Math.ceil(all.length / 2) || 1
+          left = all.slice(0, half)
+          right = all.slice(half)
+          if (!leftTitle) leftTitle = clip(subjectOf(left[0]), 8)
+          if (!rightTitle) rightTitle = clip(subjectOf(right[0]), 8)
+        }
+      }
+      // 左右各给 5 条（常规双列卡只给 3 条）—— 解说页有整页空间
+      return {
+        eyebrow: '对比',
+        leftTitle: leftTitle || '以前',
+        leftLines: (left.length ? left : [clip(f.headline, 16)]).slice(0, 5).join('\n'),
+        rightTitle: rightTitle || '现在',
+        rightLines: (right.length ? right : [clip(f.phrases[1] ?? '', 16)]).slice(0, 5).join('\n'),
+      }
+    },
+  },
+  {
+    effectId: 'ex-stat-hero',
+    name: '解说·数据页',
+    roles: ['body'],
+    // 数字必须真出现在口播里（pairs 是同 cue 配出来的实体-数值对）
+    score: (f) => {
+      if (!f.pairs.length) return 0
+      return (
+        8 +
+        (f.has('percent') ? 4 : 0) +
+        (f.has('trend') ? 3 : 0) +
+        (f.has('price') ? 3 : 0) +
+        (f.pairs.length >= 2 ? 2 : 0)
+      )
+    },
+    build: (f) => {
+      const p = f.pairs.find((x) => x.unit === '%') ?? f.pairs[0]
+      return {
+        eyebrow: '一个数字',
+        label: clip(p?.entity || f.headline, 14),
+        target: Math.min(9999999, p?.value ?? 0),
+        decimals: 0,
+        prefix: '',
+        suffix: p?.unit ? ` ${p.unit}` : '',
+        pill: clip(f.headline, 24),
+      }
+    },
+  },
+  {
+    effectId: 'ex-highlight-turn',
+    name: '解说·强调页',
+    roles: ['body'],
+    discardsData: true,
+    score: (f) => (f.has('negation') ? 10 : 0) + (f.has('replace') ? 8 : 0),
+    build: (f) => {
+      const others = contentPhrases(f, 3, 24).filter((p) => p !== f.headline)
+      return {
+        lead: others[0] ?? '',
+        highlight: clip(f.headline, 16),
+        note: others[1] ?? '',
+      }
+    },
+  },
+  {
+    effectId: 'ex-checklist',
+    name: '解说·清单页',
+    roles: ['body'],
+    discardsData: true,
+    score: (f) =>
+      (f.has('enum') ? 11 : 0) +
+      (f.has('rank') ? 7 : 0) +
+      (f.has('classification') ? 6 : 0) +
+      (f.has('list') ? 6 : 0) +
+      (f.tools.length >= 2 ? 3 : 0),
+    build: (f) => {
+      // 排名走 rankItems（保住中文名次条目）；纯罗列工具走实体列表
+      //（此时名次就是段里出现的产品名本身）；其余按短句取。
+      const items = withoutHeadline(
+        f.has('rank')
+          ? rankItems(f, 6, 22)
+          : f.has('list') && f.tools.length >= 2
+            ? f.tools.slice(0, 6)
+            : exList(f, 6, 22),
+        f,
+      )
+      return {
+        eyebrow: f.has('rank') ? '排序' : f.has('classification') ? '分类' : '要点',
+        title: title(f, 13, '这一段说了什么'),
+        items: items.slice(0, 6).join('\n'),
+      }
+    },
+  },
+  {
+    effectId: 'ex-section-slide',
+    name: '解说·章节页',
+    roles: ['body'],
+    discardsData: true,
+    // 只在"换话题的第一句"出现：段首是引导词、且这一段没有任何强结构
+    // （有步骤/对比/排名/百分比/价格时该出的是内容页，不是翻页封面）
+    score: (f) => {
+      if (f.has('steps') || f.has('compare') || f.has('rank')) return 0
+      if (f.has('percent') || f.has('price') || f.has('list')) return 0
+      if (f.has('enum') || f.has('classification')) return 0
+      const lead = f.phrases[0] ?? ''
+      if (!/^(好|好的|那么|接着|接下来|然后|另外|还有|再来看|首先|其次|最后|我们|所以)/.test(lead)) return 0
+      return f.duration >= 7 ? 7 : 4
+    },
+    build: (f) => ({
+      index: String(f.index + 1).padStart(2, '0'),
+      title: clip(f.headline, 18),
+      sub: subPhrase(f, 22),
+    }),
+  },
+  // 兜底：关键词标签页（解说库唯一带正基础分的卡，保证每段都有页）
+  {
+    effectId: 'ex-tag-build',
+    name: '解说·标签页',
+    roles: ['body'],
+    discardsData: true,
+    score: (f) => 5 + (f.tools.length >= 2 ? 3 : 0) + (f.avgLen <= 10 ? 3 : 0),
+    build: (f) => {
+      // 提到多个实体时，实体本身就是这一页最该强调的关键词
+      const tags = withoutHeadline(
+        f.tools.length >= 2 ? f.tools.slice(0, 8) : exList(f, 8, 10),
+        f,
+      )
+      return {
+        eyebrow: '关键词',
+        title: title(f, 13, '这一段说了什么'),
+        tags: tags.slice(0, 8).join('\n'),
+      }
+    },
+  },
+]
+
+/**
  * 按语义把字幕切成段（跟 store / 导入弹窗共用，保证预览和实际生成一致）。
  *
  * 不再是"每 3 句一刀切"——口播句长差异极大（"没有之一"只有 0.5s，"混元三它在
@@ -919,9 +1295,14 @@ const CANDIDATES: Candidate[] = [
 /**
  * 引导词"家族"：同一家族只在**第一次**出现时断。
  * 否则"第一步/第二步/第三步"会被切成三段，步骤卡彻底废掉。
+ *
+ * ⚠️ 步骤标记必须**句中也要认**，不能只看句首。
+ * 口播进入流程时最常见的是「接下来讲怎么用，第一步，先跟它说清楚目标」——
+ * 只看句首会把它判成 trans，于是它跟后面的「第二步/第三步」分成两个不同家族，
+ * 家族守卫失效 → 一段完整的四步流程被拆成「1 步一页 + 3 步一页」。
  */
 function leadFamily(text: string): string | null {
-  if (/^第[一二三四五六]步|^第一步|^第二步|^第三步/.test(text)) return 'step'
+  if (/第[一二三四五六]步/.test(text)) return 'step'
   if (/^第[一二三四五六]/.test(text)) return 'enum'
   if (/^总结一下|^总结|^结论|^最后/.test(text)) return 'sum'
   if (/^好|^好的|^好吧|^那么|^接着|^接下来|^然后|^另外|^还有|^再来看|^首先|^其次/.test(text)) return 'trans'
@@ -937,22 +1318,80 @@ function leadFamily(text: string): string | null {
  * 而"排名"恰恰是横评类口播最有价值的信息。
  */
 const RANK_SEQ =
-  /优先考虑|优先使用|再考虑|再到|最后(?:再)?(?:到|是|考虑)|其次|再次|排名是|我们的排名|第一梯队/
+  /优先考虑|优先使用|再考虑|再到|最后(?:再)?(?:到|是|考虑)|其次|再次|排名是|我们的排名|第[一二三四五六](?:梯队|档|批|名)/
 
 const isSeq = (t: string) => RANK_SEQ.test(t)
+
+/**
+ * 步骤序列标记。跟排名序列同理：一串「第一步/第二步/第三步/第四步」被硬上限腰斩后，
+ * 后半截会变成一页只有一步的残页（实测第四步被切出去单独成一页）。
+ * 段内已出现步骤词、这一句也是步骤词 → 不许断，让整套流程攒完整。
+ */
+const STEP_SEQ = /第[一二三四五六]步|步骤是|流程是/
+
+const isStepSeq = (t: string) => STEP_SEQ.test(t)
 
 const familyIn = (cues: SrtCue[], fam: string) =>
   cues.some((c) => leadFamily(c.text.trim()) === fam)
 
-export function chunkCues(cues: SrtCue[]): SrtCue[][] {
-  const MIN_DUR = 3.2
-  const HARD_MAX_DUR = 12
-  const HARD_MAX_TEXT = 90
-  const GAP_BREAK = 0.75
+/**
+ * 分段密度档位。
+ *
+ * 解说类知识视频跟常规口播的节奏完全不同：常规口播一句一个信息点、停顿多，
+ * 卡要跟着换；解说视频一段就是一个知识点，一页 PPT 要停留十几秒。
+ * 所以解说档把硬上限抬高一倍，并把"停顿断句"的门槛也抬高 ——
+ * 同样的字幕，常规档切出 12 页，解说档只切出 6~7 页，
+ * 但每一页上装的内容是原来的两倍（这就是"同一页更密集"）。
+ */
+type ChunkProfile = {
+  /** 段时长低于它就并进上一段（避免碎片页） */
+  minDur: number
+  /** 硬上限：时长/字数任一达标就强制断 */
+  hardMaxDur: number
+  hardMaxText: number
+  /** 停顿断句门槛：停顿达到它 + 已攒够 breakMinDur 才算换话题 */
+  gapBreak: number
+  breakMinDur: number
+  /** 引导词要生效，当前段至少已经攒够这么久 */
+  leadMinDur: number
+  /** 排名序列的粘连上限 */
+  seqMaxDur: number
+}
+
+const CHUNK_PROFILE: Record<AutoCardLib, ChunkProfile> = {
+  regular: {
+    minDur: 3.2,
+    hardMaxDur: 12,
+    hardMaxText: 90,
+    gapBreak: 0.75,
+    breakMinDur: 5,
+    leadMinDur: 4,
+    seqMaxDur: 24,
+  },
+  explain: {
+    minDur: 4,
+    // 上限比常规档高一档（20s / 150 字 vs 12s / 90 字）：
+    // 一组并列信息（三档排名、四步流程、一串能力）应当落在同一页，
+    // 但不能高到把两个话题吞进一页 —— 实测 20s 是"一页一件事"的边界。
+    hardMaxDur: 20,
+    hardMaxText: 150,
+    gapBreak: 0.9,
+    breakMinDur: 6,
+    leadMinDur: 5,
+    seqMaxDur: 38,
+  },
+}
+
+export function chunkCues(cues: SrtCue[], lib: AutoCardLib = 'regular'): SrtCue[][] {
+  const p = CHUNK_PROFILE[lib] ?? CHUNK_PROFILE.regular
+  const MIN_DUR = p.minDur
+  const HARD_MAX_DUR = p.hardMaxDur
+  const HARD_MAX_TEXT = p.hardMaxText
+  const GAP_BREAK = p.gapBreak
   /** 引导词要生效，当前段至少已经攒够这么久，避免切出 1 秒的碎片 */
-  const LEAD_MIN_DUR = 4
+  const LEAD_MIN_DUR = p.leadMinDur
   /** 排名序列的粘连上限：够攒下 6~7 项名次，再多就强制断 */
-  const SEQ_MAX_DUR = 24
+  const SEQ_MAX_DUR = p.seqMaxDur
 
   const out: SrtCue[][] = []
   let cur: SrtCue[] = []
@@ -968,15 +1407,19 @@ export function chunkCues(cues: SrtCue[]): SrtCue[][] {
     const dur = cur.length ? (c.end - cur[0].start) / 1000 : 0
     const textLen = cur.reduce((s, x) => s + x.text.length, 0)
     const tooLong = dur >= HARD_MAX_DUR || textLen >= HARD_MAX_TEXT
-    // 已经说满 5 秒，且这里有个明显停顿 → 话题换了，断
-    const atBreak = gap >= GAP_BREAK && dur >= 5
+    // 已经说满 breakMinDur 秒，且这里有个明显停顿 → 话题换了，断
+    const atBreak = gap >= GAP_BREAK && dur >= p.breakMinDur
     // 遇到段首引导词，且这一段还没有同家族的引导词 → 断在它前面
     const fam = leadFamily(c.text.trim())
     const atLead = dur >= LEAD_MIN_DUR && fam !== null && !familyIn(cur, fam)
-    // 正在报一串排名：段内已有排序词、这一句也是排序词 → 不许断，让序列攒完整。
+    // 正在报一串排名 / 走一套步骤：段内已有同类标记、这一句也带同类标记 → 不许断，
+    // 让序列攒完整（排名要看出名次关系，步骤不能只剩半截）。
     // 上限 SEQ_MAX_DUR 防止一句口播无限粘连。
     const inSeq =
-      cur.length > 0 && isSeq(c.text) && cur.some((x) => isSeq(x.text)) && dur < SEQ_MAX_DUR
+      cur.length > 0 &&
+      dur < SEQ_MAX_DUR &&
+      ((isSeq(c.text) && cur.some((x) => isSeq(x.text))) ||
+        (isStepSeq(c.text) && cur.some((x) => isStepSeq(x.text))))
     if (cur.length && !inSeq && (tooLong || atBreak || atLead)) flush()
     cur.push(c)
     lastEnd = c.end
@@ -988,7 +1431,12 @@ export function chunkCues(cues: SrtCue[]): SrtCue[][] {
   for (const chunk of out) {
     const prev = merged[merged.length - 1]
     const dur = (chunk[chunk.length - 1].end - chunk[0].start) / 1000
-    if (prev && dur < MIN_DUR) {
+    // 解说档额外一条：**另起一段话题**的短段不许并进上一页。
+    // 并进去等于把两件事挤在同一页幻灯片上，而"一页只讲一件事"正是解说片的底线
+    //（实测反例：「跟传统搜索的差别」那三句把「接下来讲怎么用，第一步…」吞了进去）。
+    const startsTopic = leadFamily(chunk[0].text.trim()) !== null
+    const blockMerge = lib === 'explain' && startsTopic
+    if (prev && dur < MIN_DUR && !blockMerge) {
       const prevDur = (prev[prev.length - 1].end - prev[0].start) / 1000
       // 并进去只要不超过硬上限就合，否则宁可留着
       if (prevDur + dur <= HARD_MAX_DUR + 3) {
@@ -1006,7 +1454,10 @@ export function chunkCues(cues: SrtCue[]): SrtCue[][] {
  * 逐段调用时不知道上一段选了什么，容易出现连续两张同类型；
  * 这里把最近用过的卡型串起来，让整条片子的卡型有节奏地交替。
  */
-export function suggestCardsForChunks(chunks: SrtCue[][]): (AutoCardSuggestion | null)[] {
+export function suggestCardsForChunks(
+  chunks: SrtCue[][],
+  lib: AutoCardLib = 'regular',
+): (AutoCardSuggestion | null)[] {
   const recent: string[] = []
   const used: Record<string, number> = {}
   // 个人偏好：常用卡型排行 → 加分函数（第 1 名 +3，往后每名 -0.5，8 名之外不加分）。
@@ -1018,7 +1469,7 @@ export function suggestCardsForChunks(chunks: SrtCue[][]): (AutoCardSuggestion |
     return Math.max(0, 3 - idx * 0.5)
   }
   return chunks.map((chunk, i) => {
-    const s = suggestCardForChunk(chunk, i, chunks.length, { recent, used, prefBonus })
+    const s = suggestCardForChunk(chunk, i, chunks.length, { recent, used, prefBonus }, lib)
     if (s) {
       recent.unshift(s.effectId)
       if (recent.length > 3) recent.pop()
@@ -1045,9 +1496,10 @@ export function suggestCardForChunk(
   index: number,
   total = 1,
   ctx: ScoreCtx = { recent: [], used: {} },
+  lib: AutoCardLib = 'regular',
 ): AutoCardSuggestion | null {
   const role = roleOf(index, total)
-  const f = featuresOf(chunk, role)
+  const f = featuresOf(chunk, role, index)
   if (!f.phrases.length) return null
 
   /**
@@ -1062,9 +1514,13 @@ export function suggestCardForChunk(
   // 「挑重点」：过渡段 / 口水段不出卡。
   // 以前每段必出一张，一段 2 分钟的视频能出 9 张卡，一半是"那么我们接着看"这种废话，
   // 画面又吵又记不住。开场和收尾不受这个限制（那两个位置本来就必须有画面）。
-  if (effRole === 'body' && f.salience < SALIENCE_GATE) return null
+  // 解说档门控放宽：解说页是整页幻灯片，一张要顶十几秒，
+  // 中间留空 = 观众长时间盯着一张废页，所以宁可多出一页轻内容页。
+  const gate = lib === 'explain' ? SALIENCE_GATE_EXPLAIN : SALIENCE_GATE
+  if (effRole === 'body' && f.salience < gate) return null
 
-  const pool = CANDIDATES.filter((c) => !c.roles || c.roles.includes(effRole))
+  const list = lib === 'explain' ? EXPLAIN_CANDIDATES : CANDIDATES
+  const pool = list.filter((c) => !c.roles || c.roles.includes(effRole))
   let best: Candidate | null = null
   let bestScore = -Infinity
   for (const c of pool) {
@@ -1101,6 +1557,7 @@ export function suggestCardForChunk(
     name: best.name,
     params,
     role,
+    lib,
     director: makeDirector(chunk, params, intent),
   }
 }

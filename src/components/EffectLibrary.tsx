@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { createPortal } from 'react-dom'
 import { useEditor } from '../store'
-import type { EffectDef } from '../types'
+import type { EffectDef, EffectLib } from '../types'
 import { cardMode, MODE_LABELS, defaultFitFor } from '../hyperframes/modes'
 import { skins, paletteVars } from '../themes'
+import { projectCanvasBg } from '../canvasBg'
 import { categoryHint, categoryRank } from '../effectCategories'
 
 const EN_SUBTITLES: Record<string, string> = {
@@ -54,6 +55,43 @@ const EN_SUBTITLES: Record<string, string> = {
   'srcvid-concept-trio': 'CONCEPT TRIO',
   'srcvid-ip-circle': 'IP CIRCLE',
   'srcvid-end-cta': 'END CTA BAR',
+  // 解说类（知识解说整页卡）
+  'ex-title-slide': 'EXPLAINER TITLE',
+  'ex-section-slide': 'EXPLAINER SECTION',
+  'ex-key-point': 'KEY POINT PILL',
+  'ex-tag-build': 'TAG BUILD UP',
+  'ex-highlight-turn': 'HIGHLIGHT TURN',
+  'ex-checklist': 'CHECKLIST ROWS',
+  'ex-steps-flow': 'STEP FLOW',
+  'ex-versus': 'VERSUS PANELS',
+  'ex-stat-hero': 'STAT HERO',
+  'ex-end-slide': 'EXPLAINER END',
+  'ex-board-blank': 'BLANK BOARD',
+  // 解说元素卡（可自由叠加的零件）
+  'exa-headline': 'HEADLINE',
+  'exa-subhead': 'SUBHEAD',
+  'exa-eyebrow': 'EYEBROW',
+  'exa-navy-pill': 'DARK PILL',
+  'exa-tag': 'TAG PILL',
+  'exa-amber-pill': 'AMBER PILL',
+  'exa-number-row': 'NUMBER ROW',
+  'exa-step-chip': 'STEP CHIP',
+  'exa-arrow': 'ARROW',
+  'exa-big-number': 'BIG NUMBER',
+  'exa-caption': 'CAPTION',
+  'exa-rule': 'RULE',
+  'exa-paragraph': 'PARAGRAPH',
+}
+
+/** 两个库：常规（叠加在口播画面上）/ 解说（知识解说整页卡） */
+const LIBS: { id: EffectLib; name: string; hint: string }[] = [
+  { id: 'regular', name: '常规库', hint: '叠加在有人物的口播画面上' },
+  { id: 'explain', name: '解说库', hint: '知识解说整页卡，像播一页好看的 PPT' },
+]
+
+/** 卡归属哪个库（缺省常规库 —— 存量卡与拓展包卡自动归常规库） */
+function libOf(e: EffectDef): EffectLib {
+  return e.lib ?? 'regular'
 }
 
 const PREVIEW_W = 220
@@ -105,7 +143,8 @@ function EffectPreview({ def }: { def: EffectDef }) {
   const stageVars: React.CSSProperties = {
     ...(skin.canvasVars as React.CSSProperties),
     ...(paletteVars(state.project.palette) as React.CSSProperties),
-    background: skin.canvasVars['--stage-bg'],
+    // 与画布同款背景：工程画布背景改了，库里的悬停预览也跟着变
+    background: projectCanvasBg(state.project, skin.canvasVars['--stage-bg']),
     ...({ '--stage-card-opacity': String(state.project.cardOpacity) } as React.CSSProperties),
   } as React.CSSProperties
 
@@ -142,6 +181,7 @@ function EffectPreview({ def }: { def: EffectDef }) {
 
 export default function EffectLibrary() {
   const { effects, selected, dispatch } = useEditor()
+  const [lib, setLib] = useState<EffectLib>('regular')
   const [query, setQuery] = useState('')
   const [displayMode, setDisplayMode] = useState<'detail' | 'compact'>('detail')
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
@@ -167,10 +207,24 @@ export default function EffectLibrary() {
       ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [selectedEffectId])
 
+  const countByLib = useMemo(() => {
+    const c: Record<EffectLib, number> = { regular: 0, explain: 0 }
+    for (const e of effects) c[libOf(e)] += 1
+    return c
+  }, [effects])
+
+  // 选中一张别的库里的卡时，自动切到它所在的库（否则用户会以为卡丢了）
+  useEffect(() => {
+    if (!selectedEffectId) return
+    const target = effects.find((e) => e.id === selectedEffectId)
+    if (target) setLib(libOf(target))
+  }, [selectedEffectId, effects])
+
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase()
     const map = new Map<string, EffectDef[]>()
     for (const e of effects) {
+      if (libOf(e) !== lib) continue
       if (
         q &&
         // 搜索范围：名称 + 描述 + 分类 + ID（如搜 "replica" 能命中所有卡）
@@ -183,7 +237,7 @@ export default function EffectLibrary() {
       map.get(key)!.push(e)
     }
     return [...map.entries()].sort((a, b) => categoryRank(a[0]) - categoryRank(b[0]))
-  }, [effects, query])
+  }, [effects, query, lib])
 
   const toggleCategory = (cat: string) => {
     setCollapsed((cur) => ({ ...cur, [cat]: !cur[cat] }))
@@ -192,6 +246,17 @@ export default function EffectLibrary() {
   const toggleAll = () => {
     setCollapsed(allCollapsed ? {} : Object.fromEntries(groups.map(([cat]) => [cat, true])))
   }
+
+  /** 当前搜索词在另一个库里还有多少张（提示用户切库，别以为卡没了） */
+  const otherMatches = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return 0
+    return effects.filter(
+      (e) =>
+        libOf(e) !== lib &&
+        `${e.name} ${e.description ?? ''} ${e.category ?? ''} ${e.id}`.toLowerCase().includes(q),
+    ).length
+  }, [effects, query, lib])
 
   /** 新增一张卡到时间轴（默认行为） */
   const addCard = (effect: EffectDef) => {
@@ -218,7 +283,10 @@ export default function EffectLibrary() {
       <aside className="os-panel os-panel-left">
         {toast && <div className="os-lib-toast">{toast}</div>}
         <div className="os-panel-header os-panel-header-lib">
-          <span className="os-lib-header-title">动效库 ({effects.length})</span>
+          <span className="os-lib-header-title">
+            动效库 ({countByLib[lib]})
+            <span className="os-lib-header-sub">{LIBS.find((l) => l.id === lib)?.hint}</span>
+          </span>
           <div className="os-lib-header-actions">
             <div className="os-lib-mode">
               {([
@@ -246,6 +314,21 @@ export default function EffectLibrary() {
             </button>
           </div>
         </div>
+        {/* 库页签：常规 / 解说 —— 两个库互不干扰，存量卡全在常规库 */}
+        <div className="os-lib-tabs">
+          {LIBS.map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              className={`os-lib-tab ${lib === l.id ? 'active' : ''}`}
+              title={l.hint}
+              onClick={() => setLib(l.id)}
+            >
+              {l.name}
+              <span className="os-lib-tab-count">{countByLib[l.id]}</span>
+            </button>
+          ))}
+        </div>
         {/* 搜索条放在滚动容器外面：这样滚多远它都钉在库顶部，不会跟着列表跑掉 */}
         <div className="os-lib-searchbar">
           <div className="os-lib-search-wrap">
@@ -270,6 +353,15 @@ export default function EffectLibrary() {
         </div>
         <div className="os-panel-body">
           {groups.length === 0 && <div className="os-empty">没有匹配的动效</div>}
+          {otherMatches > 0 && (
+            <button
+              type="button"
+              className="os-lib-otherlib"
+              onClick={() => setLib(lib === 'regular' ? 'explain' : 'regular')}
+            >
+              {lib === 'regular' ? '解说库' : '常规库'}里还有 {otherMatches} 张匹配的卡 →
+            </button>
+          )}
           {groups.map(([cat, list]) => (
             <div key={cat} className="os-lib-group">
               <button

@@ -20,7 +20,6 @@ import {
   DEFAULT_SFX_ID,
   DEFAULT_SFX_VOLUME,
   SFX_DEFAULT_BY_CATEGORY,
-  SFX_MUTED,
   autoSfxOffset,
   getSfxVersion,
   playSfx,
@@ -1625,15 +1624,13 @@ export default function ParameterPanel() {
           </div>
         </div>
         <div className="os-param-note os-param-note-block">
-          {SFX_MUTED
-            ? '本版本不发声：这里的下拉、音量、时长都会存进工程，但预览与导出都不出声。'
-            : projectSfxOff
-              ? '⚠️ 工程总开关关着，整片都不出声（导出也不会烤音轨）。到顶栏「设置 → 音效」里打开。'
-              : subtitleNoSfx
-                ? '口播字幕默认不发音效（一句一响会很吵）。想给这句单独配音效，在上面的下拉里挑一个。'
-                : autoOffset > 0
-                  ? `音效会自动对齐这张卡的动画起音（延后 ${autoOffset.toFixed(2)}s，可在「触发偏移」里改）。仅播放时出声，导出会混成一条音轨烤进成片。`
-                  : '仅播放时出声，拖播放头不响；导出会把所有卡的音效混成一条音轨烤进成片。'}
+          {projectSfxOff
+            ? '⚠️ 工程总开关关着，整片都不出声（导出也不会烤音轨）。到顶栏「设置 → 音效」里打开。'
+            : subtitleNoSfx
+              ? '口播字幕默认不发音效（一句一响会很吵）。想给这句单独配音效，在上面的下拉里挑一个。'
+              : autoOffset > 0
+                ? `音效会自动对齐这张卡的动画起音（延后 ${autoOffset.toFixed(2)}s，可在「触发偏移」里改）。仅播放时出声，导出会混成一条音轨烤进成片。`
+                : '仅播放时出声，拖播放头不响；导出会把所有卡的音效混成一条音轨烤进成片。'}
         </div>
 
         {/* ===== 位置：卡槽 / 自由定位 / 坐标 / 分段落组 ===== */}

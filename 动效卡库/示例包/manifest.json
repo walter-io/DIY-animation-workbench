@@ -1,0 +1,12 @@
+{
+  "id": "示例包",
+  "name": "示例包 · 洞察卡片",
+  "version": "1.0.0",
+  "vendor": "DIY动效编辑台",
+  "description": "演示用的卡包：2 张动效卡。删掉这个文件夹就从动效库里消失，拷回来就恢复 —— 不用改任何代码。",
+  "product": {
+    "contact": "",
+    "homepage": ""
+  },
+  "cards": "cards.js"
+}

@@ -47,6 +47,7 @@ import SrcVidPhoneMockup from './cards/overlay/SrcVidPhoneMockup'
 import SrcVidConsumptionChain from './cards/flow/SrcVidConsumptionChain'
 import SrcVidClassificationTable from './cards/list/SrcVidClassificationTable'
 import SrcVidConceptTrio from './cards/compare/SrcVidConceptTrio'
+import SrcVidIpCircle from './cards/outro/SrcVidIpCircle'
 import SrcVidEndCta from './cards/outro/SrcVidEndCta'
 import SrcVidHugeNumberHero from './cards/intro/SrcVidHugeNumberHero'
 import SrcVidTwinAppWindows from './cards/overlay/SrcVidTwinAppWindows'
@@ -59,6 +60,8 @@ import SrcVidFlowChainNodes from './cards/flow/SrcVidFlowChainNodes'
 import SrcVidFollowCta from './cards/outro/SrcVidFollowCta'
 // 动效（来自 2026-09 两段源视频）
 import ReplicaEyebrowCard from './cards/overlay/ReplicaEyebrowCard'
+import ReplicaOrbitCluster from './cards/relation/ReplicaOrbitCluster'
+import ReplicaOrbitRing from './cards/relation/ReplicaOrbitRing'
 import ReplicaNumberStat from './cards/data/ReplicaNumberStat'
 import ReplicaCodeWindow from './cards/overlay/ReplicaCodeWindow'
 import ReplicaQuestionHeadline from './cards/intro/ReplicaQuestionHeadline'
@@ -68,6 +71,7 @@ import ReplicaMascotFigure from './cards/people/ReplicaMascotFigure'
 import ReplicaHeadlineHighlight from './cards/intro/ReplicaHeadlineHighlight'
 import ReplicaStepCard from './cards/flow/ReplicaStepCard'
 import ReplicaStepList from './cards/flow/ReplicaStepList'
+import ReplicaMascotArrowLoop from './cards/people/ReplicaMascotArrowLoop'
 import ReplicaSectionDivider from './cards/intro/ReplicaSectionDivider'
 import ReplicaIconBubble from './cards/decor/ReplicaIconBubble'
 import ReplicaCtaPill from './cards/outro/ReplicaCtaPill'
@@ -75,6 +79,7 @@ import ReplicaIconCluster from './cards/decor/ReplicaIconCluster'
 // 动效（来自 2026-09-09 第三段源视频）
 import ReplicaSectionNav from './cards/overlay/ReplicaSectionNav'
 import ReplicaRightClaim from './cards/quote/ReplicaRightClaim'
+import ReplicaAnswerCard from './cards/quote/ReplicaAnswerCard'
 import ReplicaVsHero from './cards/compare/ReplicaVsHero'
 import ReplicaAbQuestion from './cards/compare/ReplicaAbQuestion'
 import ReplicaPrevCard from './cards/overlay/ReplicaPrevCard'
@@ -83,14 +88,44 @@ import ReplicaSectionShowcase from './cards/list/ReplicaSectionShowcase'
 import ReplicaNumberedList from './cards/list/ReplicaNumberedList'
 import ReplicaTimeCost from './cards/data/ReplicaTimeCost'
 import ReplicaStatHero from './cards/data/ReplicaStatHero'
+import ReplicaSideNote from './cards/overlay/ReplicaSideNote'
 // 动效（来自 2026-09-09 第四段源视频，混色主题）
+import ReplicaQuadTabsTile from './cards/overlay/ReplicaQuadTabsTile'
 import ReplicaCostDashboard from './cards/data/ReplicaCostDashboard'
 import ReplicaCostRows from './cards/compare/ReplicaCostRows'
+import ReplicaChannelStack from './cards/list/ReplicaChannelStack'
 import ReplicaTimelineSteps from './cards/flow/ReplicaTimelineSteps'
 import ReplicaBracketStats from './cards/data/ReplicaBracketStats'
+import ReplicaConfettiTiles from './cards/decor/ReplicaConfettiTiles'
 import ReplicaFunnelConversion from './cards/data/ReplicaFunnelConversion'
 import Replica2cardsVsGraphic from './cards/compare/Replica2cardsVsGraphic'
 import ReplicaYellowBallBadge from './cards/quote/ReplicaYellowBallBadge'
+// ===== 解说类动效卡（知识解说整页卡）=====
+import ExplainerTitle from './cards/explain/ExplainerTitle'
+import ExplainerSection from './cards/explain/ExplainerSection'
+import ExplainerKeyPoint from './cards/explain/ExplainerKeyPoint'
+import ExplainerTags from './cards/explain/ExplainerTags'
+import ExplainerHighlight from './cards/explain/ExplainerHighlight'
+import ExplainerChecklist from './cards/explain/ExplainerChecklist'
+import ExplainerSteps from './cards/explain/ExplainerSteps'
+import ExplainerVersus from './cards/explain/ExplainerVersus'
+import ExplainerStat from './cards/explain/ExplainerStat'
+import ExplainerEnd from './cards/explain/ExplainerEnd'
+import BlankBoard from './cards/explain/BlankBoard'
+// ===== 解说类元素卡（可自由叠加的零件）=====
+import AtomHeadline from './cards/explain/atom/AtomHeadline'
+import AtomSubhead from './cards/explain/atom/AtomSubhead'
+import AtomEyebrow from './cards/explain/atom/AtomEyebrow'
+import AtomNavyPill from './cards/explain/atom/AtomNavyPill'
+import AtomTag from './cards/explain/atom/AtomTag'
+import AtomAmberPill from './cards/explain/atom/AtomAmberPill'
+import AtomNumberRow from './cards/explain/atom/AtomNumberRow'
+import AtomStepChip from './cards/explain/atom/AtomStepChip'
+import AtomArrow from './cards/explain/atom/AtomArrow'
+import AtomBigNumber from './cards/explain/atom/AtomBigNumber'
+import AtomCaption from './cards/explain/atom/AtomCaption'
+import AtomRule from './cards/explain/atom/AtomRule'
+import AtomParagraph from './cards/explain/atom/AtomParagraph'
 import { hyperframesRegistry } from './hyperframes/registry'
 
 export const registry: EffectDef[] = [
@@ -840,6 +875,19 @@ export const registry: EffectDef[] = [
     defaultParams: { title: '不是说明书，是进化中的记录', cards: '说明书,进化记录,持续迭代', activeIndex: 1 },
   },
   {
+    id: 'srcvid-ip-circle',
+    name: 'IP 圆环总结',
+    category: '结尾',
+    description: '中心圆 + 三个卫星标签，结尾做总结收束。',
+    component: SrcVidIpCircle,
+    schema: [
+      { key: 'centerCn', label: '中心中文', type: 'text', default: 'IP内容工程' },
+      { key: 'centerEn', label: '中心英文', type: 'text', default: 'CONTENT ENGINE' },
+      { key: 'satellites', label: '卫星标签(逗号分隔)', type: 'text', default: '复盘迭代,输出作品,沉淀系统' },
+    ],
+    defaultParams: { centerCn: 'IP内容工程', centerEn: 'CONTENT ENGINE', satellites: '复盘迭代,输出作品,沉淀系统' },
+  },
+  {
     id: 'srcvid-end-cta',
     name: '结尾三连引导',
     category: '结尾',
@@ -1060,6 +1108,47 @@ export const registry: EffectDef[] = [
     defaultParams: { main: '万能 Skill', sub: '正在变成黑盒' },
   },
   {
+    id: 'replica-orbit-cluster',
+    name: '编排关系簇',
+    category: '关系',
+    description: '中央椭圆概念 + 左右两组卫星项（4+4），虚线连接，模拟"输入→编排→产出"链路。',
+    component: ReplicaOrbitCluster,
+    schema: [
+      { key: 'center', label: '中央文字（\\n 换行）', type: 'text', default: '编排\n关系' },
+      { key: 'leftItems', label: '左侧项（逗号分隔）', type: 'text', default: '文章,口播,封面,数据' },
+      { key: 'rightItems', label: '右侧项（逗号分隔）', type: 'text', default: '输入,产物,交接,回流' },
+      { key: 'leftColor', label: '左侧色', type: 'color', default: 'var(--stage-special)' },
+      { key: 'rightColor', label: '右侧色', type: 'color', default: 'var(--stage-data)' },
+    ],
+    defaultParams: {
+      center: '编排\n关系',
+      leftItems: '文章,口播,封面,数据',
+      rightItems: '输入,产物,交接,回流',
+      leftColor: 'var(--stage-special)',
+      rightColor: 'var(--stage-data)',
+    },
+  },
+  {
+    id: 'replica-orbit-ring',
+    name: '系统环卫星',
+    category: '关系',
+    description: '中央 2 行概念 + 椭圆环 8 颗胶囊围绕，模拟"导演/系统"全景展示。',
+    component: ReplicaOrbitRing,
+    schema: [
+      { key: 'center', label: '中央文字（\\n 换行）', type: 'text', default: '导演\n系统' },
+      {
+        key: 'items',
+        label: '环绕项（最多 12 个）',
+        type: 'text',
+        default: '选题判断,文章沉淀,口播转换,封面VFX,数据复盘,发布填稿,策略回写,下次脚本',
+      },
+    ],
+    defaultParams: {
+      center: '导演\n系统',
+      items: '选题判断,文章沉淀,口播转换,封面VFX,数据复盘,发布填稿,策略回写,下次脚本',
+    },
+  },
+  {
     id: 'replica-number-stat',
     name: '数字 + 指标行',
     category: '数据',
@@ -1240,6 +1329,24 @@ export const registry: EffectDef[] = [
     },
   },
   {
+    id: 'replica-mascot-arrow-loop',
+    name: '人物环绕箭头',
+    category: '人物',
+    description: '中央卡通人物（人形/挂锁）+ 4 段弧形箭头从四面环绕指向中心。',
+    component: ReplicaMascotArrowLoop,
+    schema: [
+      { key: 'color', label: '主色', type: 'color', default: 'var(--stage-primary)' },
+      {
+        key: 'mascot',
+        label: '中央图形',
+        type: 'select',
+        default: 'figure',
+        options: ['figure', 'lock'],
+      },
+    ],
+    defaultParams: { color: 'var(--stage-primary)', mascot: 'figure' },
+  },
+  {
     id: 'replica-section-divider',
     name: '分段小标题',
     category: '开场',
@@ -1328,6 +1435,19 @@ export const registry: EffectDef[] = [
       { key: 'line2', label: '第 2 行（橙）', type: 'text', default: '唯一标准' },
     ],
     defaultParams: { eyebrow: 'EDITING IS NOT ONE NUMBER', line1: '速度，不是', line2: '唯一标准' },
+  },
+  {
+    id: 'replica-answer-card',
+    name: '答案卡',
+    category: '金句',
+    description: '描边面板给出一锤定音的答案：eyebrow + 大字结论 + ⊗/✓ 圆圈图标。',
+    component: ReplicaAnswerCard,
+    schema: [
+      { key: 'eyebrow', label: 'eyebrow', type: 'text', default: 'FIRST TEST / ANSWER' },
+      { key: 'answer', label: '答案', type: 'text', default: '没有' },
+      { key: 'icon', label: '图标', type: 'select', default: 'x', options: ['x', 'check'] },
+    ],
+    defaultParams: { eyebrow: 'FIRST TEST / ANSWER', answer: '没有', icon: 'x' },
   },
   {
     id: 'replica-vs-hero',
@@ -1507,8 +1627,36 @@ export const registry: EffectDef[] = [
     ],
     defaultParams: { eyebrow: 'EXTRA TIME → REUSABLE VALUE', value: '+2h', label: '多出来的', chipLabel: 'OUTPUT B)', chipValue: '15 段MG', showChip: 'true' },
   },
+  {
+    id: 'replica-side-note',
+    name: '左下便签箭头',
+    category: '贴片',
+    description: '灰描边小卡：两行标题（第 2 行橙）+ 橙色弧形箭头 + tiny caps 小字。',
+    component: ReplicaSideNote,
+    schema: [
+      { key: 'line1', label: '行 1（白）', type: 'text', default: '但我还会' },
+      { key: 'line2', label: '行 2（橙）', type: 'text', default: '继续用' },
+      { key: 'tiny', label: 'tiny 小字', type: 'text', default: 'THE NEXT TEST CONTINUES' },
+      { key: 'arrow', label: '显示箭头', type: 'select', default: 'true', options: ['true', 'false'] },
+    ],
+    defaultParams: { line1: '但我还会', line2: '继续用', tiny: 'THE NEXT TEST CONTINUES', arrow: 'true' },
+  },
 
   // ===== 动效 · 第三批（2026-09-09 第四段源视频，混色主题，10 张全部新增）=====
+  {
+    id: 'replica-quad-tabs-tile',
+    name: '3 标签卡 + 图阵',
+    category: '贴片',
+    description: '3 个相同色块"剧"标签（带顶部 tab 角标）+ 1 个深色 4×4 霓虹图阵卡。',
+    component: ReplicaQuadTabsTile,
+    schema: [
+      { key: 'title', label: '标题（白）', type: 'text', default: '怎么老是这些剧情?' },
+      { key: 'titleOrange', label: '标题（橙，可空）', type: 'text', default: '' },
+      { key: 'labels', label: '3 个标签（逗号分隔）', type: 'text', default: '剧,剧,剧' },
+      { key: 'imageCol', label: '图阵脚注', type: 'text', default: '3 320×180' },
+    ],
+    defaultParams: { title: '怎么老是这些剧情?', titleOrange: '', labels: '剧,剧,剧', imageCol: '3 320×180' },
+  },
   {
     id: 'replica-cost-dashboard',
     name: '成本仪表板',
@@ -1577,6 +1725,30 @@ export const registry: EffectDef[] = [
     },
   },
   {
+    id: 'replica-channel-stack',
+    name: '渠道答案堆',
+    category: '列表',
+    description: '3 行渠道卡 + 答案行橙高亮（揭示"中转站"等内幕），底部一句"还有一个你拿不到的渠道"。',
+    component: ReplicaChannelStack,
+    schema: [
+      { key: 'titleWhite', label: '标题（白）', type: 'text', default: '这差价是' },
+      { key: 'titleOrange', label: '标题（橙）', type: 'text', default: '怎么来的?' },
+      {
+        key: 'rows',
+        label: '行（图标|标题|副标|badge|tone:cyan|orange|red|purple）',
+        type: 'text',
+        default: '🖥|自部署开源模型|各家公司自己部署（H3 这类）|正路|cyan,🛒|批量采购|大公司包量，成本远低于你|正路|cyan,🗂|中转站账号池|脚本注册薅新人额度 → 聚合池|官方 2-5 折|orange',
+      },
+      { key: 'caption', label: '底部 chip（可空）', type: 'text', default: '还有一个你拿不到的渠道' },
+    ],
+    defaultParams: {
+      titleWhite: '这差价是',
+      titleOrange: '怎么来的?',
+      rows: '🖥|自部署开源模型|各家公司自己部署（H3 这类）|正路|cyan,🛒|批量采购|大公司包量，成本远低于你|正路|cyan,🗂|中转站账号池|脚本注册薅新人额度 → 聚合池|官方 2-5 折|orange',
+      caption: '还有一个你拿不到的渠道',
+    },
+  },
+  {
     id: 'replica-timeline-steps',
     name: '横版时间线步骤',
     category: '流程',
@@ -1627,6 +1799,19 @@ export const registry: EffectDef[] = [
       items: '👥|某某文化|员工一年扩充到千人规模|月营收超 5000万|5,000|万/月|var(--stage-special),🏢|某某动漫|从 30 人扩到 800 人|—|800|人|var(--stage-primary),📈|某文在线|目标年化产能|—|1,038|部/年|var(--stage-data)',
       caption: '机构已匿名处理 · 数据为公开报道口径',
     },
+  },
+  {
+    id: 'replica-confetti-tiles',
+    name: '散落 剧 字瓦片',
+    category: '装饰',
+    description: '满屏随机散落多色"剧"瓦片（红/蓝/紫/青/金 + 随机大小/位置/旋转 + 阴影），底部居中标题。',
+    component: ReplicaConfettiTiles,
+    schema: [
+      { key: 'title', label: '底部标题', type: 'text', default: '2025 年全年上线的漫剧有 6 万多部' },
+      { key: 'count', label: '瓦片数量', type: 'number', default: 18, min: 6, max: 28, step: 1 },
+      { key: 'seed', label: '随机种子', type: 'number', default: 7, min: 1, max: 99, step: 1 },
+    ],
+    defaultParams: { title: '2025 年全年上线的漫剧有 6 万多部', count: 18, seed: 7 },
   },
   {
     id: 'replica-funnel-conversion',
@@ -1695,6 +1880,579 @@ export const registry: EffectDef[] = [
       leftChip: '它赌不起你的主业',
       rightChip: 'AI 短剧 · 业余补充',
       caption: '你的能力本身，能拿到更确定、更高的回报',
+    },
+  },
+
+  // ===== 解说类动效卡（知识解说整页卡 · 参考"知识解说口播"幻灯片）=====
+  {
+    id: 'ex-title-slide',
+    name: '解说·标题页',
+    category: '开场',
+    lib: 'explain',
+    description: '整页纸感底 + 顶部引导行 + 特大标题 + 深色药丸结论。解说片的封面页。',
+    component: ExplainerTitle,
+    schema: [
+      { key: 'bg', label: '背景', type: 'select', default: '透明', options: ['透明', '米白', '白色', '黑色'] },
+      { key: 'ink', label: '文字色', type: 'color', default: '#1d1e22' },
+
+      { key: 'eyebrow', label: '引导行', type: 'text', default: '01 · 基础概念' },
+      { key: 'titleSub', label: '主标（小）', type: 'text', default: '大语言模型' },
+      { key: 'title', label: '主标（大）', type: 'text', default: 'Large Language Model' },
+      { key: 'pill', label: '结论药丸', type: 'text', default: '接下来三分钟讲清楚' },
+    ],
+    defaultParams: {
+      bg: '透明',
+      ink: '#1d1e22',
+
+      eyebrow: '01 · 基础概念',
+      titleSub: '大语言模型',
+      title: 'Large Language Model',
+      pill: '接下来三分钟讲清楚',
+      duration: 5,
+    },
+  },
+  {
+    id: 'ex-section-slide',
+    name: '解说·章节页',
+    category: '开场',
+    lib: 'explain',
+    description: '超大章号 + 章节标题 + 橙色短横线，进入新一章的翻页过渡。',
+    component: ExplainerSection,
+    schema: [
+      { key: 'bg', label: '背景', type: 'select', default: '透明', options: ['透明', '米白', '白色', '黑色'] },
+      { key: 'ink', label: '文字色', type: 'color', default: '#1d1e22' },
+
+      { key: 'index', label: '章号', type: 'text', default: '02' },
+      { key: 'title', label: '章节标题', type: 'text', default: '搭建在 LLM 之上的执行框架' },
+      { key: 'sub', label: '副标', type: 'text', default: 'Agent 到底多了什么' },
+    ],
+    defaultParams: {
+      bg: '透明',
+      ink: '#1d1e22',
+
+      index: '02',
+      title: '搭建在 LLM 之上的执行框架',
+      sub: 'Agent 到底多了什么',
+      duration: 4,
+    },
+  },
+  {
+    id: 'ex-key-point',
+    name: '解说·要点页',
+    category: '金句',
+    lib: 'explain',
+    description: '小标题 + 特大号深色药丸，把一段讲解收成一句话重点。',
+    component: ExplainerKeyPoint,
+    schema: [
+      { key: 'bg', label: '背景', type: 'select', default: '透明', options: ['透明', '米白', '白色', '黑色'] },
+      { key: 'ink', label: '文字色', type: 'color', default: '#1d1e22' },
+
+      { key: 'eyebrow', label: '引导行', type: 'text', default: '重点' },
+      { key: 'title', label: '小标题', type: 'text', default: 'LLM 到底在做什么' },
+      { key: 'point', label: '要点（药丸）', type: 'text', default: '把语言变成概率，再变成下一个词' },
+    ],
+    defaultParams: {
+      bg: '透明',
+      ink: '#1d1e22',
+
+      eyebrow: '重点',
+      title: 'LLM 到底在做什么',
+      point: '把语言变成概率，再变成下一个词',
+      duration: 5,
+    },
+  },
+  {
+    id: 'ex-tag-build',
+    name: '解说·标签页',
+    category: '列表',
+    lib: 'explain',
+    description: '标题下方一排白色药丸标签，跟着口播逐个弹出（"可以聊天 / 可以写文案…"）。',
+    component: ExplainerTags,
+    schema: [
+      { key: 'bg', label: '背景', type: 'select', default: '透明', options: ['透明', '米白', '白色', '黑色'] },
+      { key: 'ink', label: '文字色', type: 'color', default: '#1d1e22' },
+
+      { key: 'eyebrow', label: '引导行', type: 'text', default: '它能做什么' },
+      { key: 'title', label: '标题', type: 'text', default: '大语言模型能干什么' },
+      { key: 'tags', label: '标签（换行或逗号分隔）', type: 'text', default: '可以聊天\n可以写文案\n可以写文章\n可以写视频脚本' },
+    ],
+    defaultParams: {
+      bg: '透明',
+      ink: '#1d1e22',
+
+      eyebrow: '它能做什么',
+      title: '大语言模型能干什么',
+      tags: '可以聊天\n可以写文案\n可以写文章\n可以写视频脚本',
+      duration: 5,
+    },
+  },
+  {
+    id: 'ex-highlight-turn',
+    name: '解说·强调页',
+    category: '金句',
+    lib: 'explain',
+    description: '铺垫行 + 特大号琥珀药丸，用于转折或强调短板（"但它没有行动能力"）。',
+    component: ExplainerHighlight,
+    schema: [
+      { key: 'bg', label: '背景', type: 'select', default: '透明', options: ['透明', '米白', '白色', '黑色'] },
+      { key: 'ink', label: '文字色', type: 'color', default: '#1d1e22' },
+
+      { key: 'lead', label: '铺垫（白药丸）', type: 'text', default: '会聊天、会写文案、会写代码…' },
+      { key: 'highlight', label: '强调（琥珀药丸）', type: 'text', default: '但它没有行动能力' },
+      { key: 'note', label: '补充说明', type: 'text', default: '它只会说，不会做' },
+    ],
+    defaultParams: {
+      bg: '透明',
+      ink: '#1d1e22',
+
+      lead: '会聊天、会写文案、会写代码…',
+      highlight: '但它没有行动能力',
+      note: '它只会说，不会做',
+      duration: 4,
+    },
+  },
+  {
+    id: 'ex-checklist',
+    name: '解说·清单页',
+    category: '列表',
+    lib: 'explain',
+    description: '标题 + 编号清单行逐条滑入，讲"一二三"这类并列要点。',
+    component: ExplainerChecklist,
+    schema: [
+      { key: 'bg', label: '背景', type: 'select', default: '透明', options: ['透明', '米白', '白色', '黑色'] },
+      { key: 'ink', label: '文字色', type: 'color', default: '#1d1e22' },
+
+      { key: 'eyebrow', label: '引导行', type: 'text', default: '怎么做' },
+      { key: 'title', label: '标题', type: 'text', default: '三步搭出一个 Agent' },
+      { key: 'items', label: '清单（换行或逗号分隔）', type: 'text', default: '给它一个目标\n配上工具和资料\n让它自己跑循环' },
+    ],
+    defaultParams: {
+      bg: '透明',
+      ink: '#1d1e22',
+
+      eyebrow: '怎么做',
+      title: '三步搭出一个 Agent',
+      items: '给它一个目标\n配上工具和资料\n让它自己跑循环',
+      duration: 6,
+    },
+  },
+  {
+    id: 'ex-steps-flow',
+    name: '解说·步骤页',
+    category: '流程',
+    lib: 'explain',
+    description: '横向步骤卡 + 箭头，跟着口播一格格搭出流程链路。',
+    component: ExplainerSteps,
+    schema: [
+      { key: 'bg', label: '背景', type: 'select', default: '透明', options: ['透明', '米白', '白色', '黑色'] },
+      { key: 'ink', label: '文字色', type: 'color', default: '#1d1e22' },
+
+      { key: 'eyebrow', label: '引导行', type: 'text', default: '流程' },
+      { key: 'title', label: '标题', type: 'text', default: '一次对话是怎么跑起来的' },
+      { key: 'steps', label: '步骤（换行或逗号分隔）', type: 'text', default: '提问\n理解意图\n检索知识\n生成回答' },
+      { key: 'footnote', label: '脚注', type: 'text', default: '' },
+    ],
+    defaultParams: {
+      bg: '透明',
+      ink: '#1d1e22',
+
+      eyebrow: '流程',
+      title: '一次对话是怎么跑起来的',
+      steps: '提问\n理解意图\n检索知识\n生成回答',
+      footnote: '',
+      duration: 6,
+    },
+  },
+  {
+    id: 'ex-versus',
+    name: '解说·对比页',
+    category: '对比',
+    lib: 'explain',
+    description: '左右两块面板（白底 vs 深底）+ 中间 VS 圆徽，讲前后/新旧差异。',
+    component: ExplainerVersus,
+    schema: [
+      { key: 'bg', label: '背景', type: 'select', default: '透明', options: ['透明', '米白', '白色', '黑色'] },
+      { key: 'ink', label: '文字色', type: 'color', default: '#1d1e22' },
+
+      { key: 'eyebrow', label: '引导行', type: 'text', default: '对比' },
+      { key: 'leftTitle', label: '左标题', type: 'text', default: '以前的做法' },
+      { key: 'leftLines', label: '左要点（换行或逗号分隔）', type: 'text', default: '人肉查资料\n一条条试错\n产出看运气' },
+      { key: 'rightTitle', label: '右标题', type: 'text', default: '现在的做法' },
+      { key: 'rightLines', label: '右要点（换行或逗号分隔）', type: 'text', default: '一句话说清目标\nLLM 给出初稿\n人来定稿' },
+    ],
+    defaultParams: {
+      bg: '透明',
+      ink: '#1d1e22',
+
+      eyebrow: '对比',
+      leftTitle: '以前的做法',
+      leftLines: '人肉查资料\n一条条试错\n产出看运气',
+      rightTitle: '现在的做法',
+      rightLines: '一句话说清目标\nLLM 给出初稿\n人来定稿',
+      duration: 6,
+    },
+  },
+  {
+    id: 'ex-stat-hero',
+    name: '解说·数据页',
+    category: '数据',
+    lib: 'explain',
+    description: '纸感底上的特大号滚动数字 + 指标名 + 可选深色结论药丸。',
+    component: ExplainerStat,
+    schema: [
+      { key: 'bg', label: '背景', type: 'select', default: '透明', options: ['透明', '米白', '白色', '黑色'] },
+      { key: 'ink', label: '文字色', type: 'color', default: '#1d1e22' },
+
+      { key: 'eyebrow', label: '引导行', type: 'text', default: '一个数字' },
+      { key: 'label', label: '指标名', type: 'text', default: '信息处理效率提升' },
+      { key: 'target', label: '目标值', type: 'number', default: 100, min: -9999999, max: 9999999, step: 1 },
+      { key: 'decimals', label: '小数位', type: 'range', default: 0, min: 0, max: 4, step: 1 },
+      { key: 'prefix', label: '前缀', type: 'text', default: '' },
+      { key: 'suffix', label: '后缀', type: 'text', default: ' 倍' },
+      { key: 'pill', label: '结论药丸', type: 'text', default: '量级变化，才是真的变化' },
+    ],
+    defaultParams: {
+      bg: '透明',
+      ink: '#1d1e22',
+
+      eyebrow: '一个数字',
+      label: '信息处理效率提升',
+      target: 100,
+      decimals: 0,
+      prefix: '',
+      suffix: ' 倍',
+      pill: '量级变化，才是真的变化',
+      duration: 5,
+    },
+  },
+  {
+    id: 'ex-end-slide',
+    name: '解说·结尾页',
+    category: '结尾',
+    lib: 'explain',
+    description: '总结一句 + 琥珀 CTA 药丸 + 可选落款，解说片的收尾整页。',
+    component: ExplainerEnd,
+    schema: [
+      { key: 'bg', label: '背景', type: 'select', default: '透明', options: ['透明', '米白', '白色', '黑色'] },
+      { key: 'ink', label: '文字色', type: 'color', default: '#1d1e22' },
+
+      { key: 'summary', label: '总结', type: 'text', default: '语言能力 + 执行框架 = 这一代应用的新底座' },
+      { key: 'cta', label: 'CTA 药丸', type: 'text', default: '关注我，下期讲 Agent 的执行框架' },
+      { key: 'sign', label: '落款', type: 'text', default: '' },
+    ],
+    defaultParams: {
+      bg: '透明',
+      ink: '#1d1e22',
+
+      summary: '语言能力 + 执行框架 = 这一代应用的新底座',
+      cta: '关注我，下期讲 Agent 的执行框架',
+      sign: '',
+      duration: 5,
+    },
+  },
+  {
+    id: 'ex-board-blank',
+    name: '解说·空白底板',
+    category: '元素',
+    lib: 'explain',
+    description: '一整页背景（米白/白色/黑色/透明），没有内容 —— 配合元素零件自由拼一页。',
+    component: BlankBoard,
+    schema: [
+      { key: 'variant', label: '背景色', type: 'select', default: '米白', options: ['米白', '白色', '黑色', '透明'] },
+      { key: 'showBar', label: '底部进度条', type: 'boolean', default: false },
+      { key: 'barColor', label: '进度条颜色', type: 'color', default: '#f2a63a' },
+      { key: 'barHeight', label: '进度条厚度', type: 'range', default: 8, min: 2, max: 24, step: 1 },
+    ],
+    defaultParams: {
+      variant: '米白',
+      ink: '#1d1e22',
+      showBar: false,
+      barColor: '#f2a63a',
+      barHeight: 8,
+      duration: 6,
+    },
+  },
+
+  // ===== 解说元素卡：组合页里用到的零件，拆出来单独用 / 自由叠加 =====
+  {
+    id: 'exa-headline',
+    name: '元素·大标题',
+    category: '元素',
+    lib: 'explain',
+    description: '一页里最大的那句话。可叠在空白底板上，字号/字重/颜色/对齐都能改。',
+    component: AtomHeadline,
+    schema: [
+      { key: 'text', label: '标题', type: 'text', default: '这一页要说的重点' },
+      { key: 'size', label: '字号', type: 'range', default: 88, min: 32, max: 160, step: 2 },
+      { key: 'weight', label: '字重', type: 'select', default: '800', options: ['600', '700', '800', '900'] },
+      { key: 'color', label: '颜色', type: 'color', default: '#1d1e22' },
+      { key: 'align', label: '对齐', type: 'select', default: 'left', options: ['left', 'center', 'right'] },
+      { key: 'maxWidth', label: '最大宽度', type: 'number', default: 1500, min: 200, max: 1920, step: 10 },
+    ],
+    defaultParams: {
+      text: '这一页要说的重点',
+      size: 88,
+      weight: '800',
+      color: '#1d1e22',
+      align: 'left',
+      maxWidth: 1500,
+      duration: 3,
+    },
+  },
+  {
+    id: 'exa-subhead',
+    name: '元素·副标题',
+    category: '元素',
+    lib: 'explain',
+    description: '比大标题小一号的补充句 / 提问句，压在标题下面。',
+    component: AtomSubhead,
+    schema: [
+      { key: 'text', label: '副标题', type: 'text', default: '它到底多出来的那一步是什么' },
+      { key: 'size', label: '字号', type: 'range', default: 46, min: 20, max: 96, step: 2 },
+      { key: 'weight', label: '字重', type: 'select', default: '600', options: ['500', '600', '700'] },
+      { key: 'color', label: '颜色', type: 'color', default: '#5a5b60' },
+      { key: 'align', label: '对齐', type: 'select', default: 'left', options: ['left', 'center', 'right'] },
+    ],
+    defaultParams: {
+      text: '它到底多出来的那一步是什么',
+      size: 46,
+      weight: '600',
+      color: '#5a5b60',
+      align: 'left',
+      maxWidth: 1400,
+      duration: 3,
+    },
+  },
+  {
+    id: 'exa-eyebrow',
+    name: '元素·引导行',
+    category: '元素',
+    lib: 'explain',
+    description: '小方块 + 小字（章节号 / 栏目名），放在页眉。',
+    component: AtomEyebrow,
+    schema: [
+      { key: 'text', label: '文字', type: 'text', default: '01 · 基础概念' },
+      { key: 'size', label: '字号', type: 'range', default: 26, min: 14, max: 48, step: 1 },
+      { key: 'color', label: '字色', type: 'color', default: '#8b8c92' },
+      { key: 'dotColor', label: '方块色', type: 'color', default: '#f2a63a' },
+    ],
+    defaultParams: { text: '01 · 基础概念', size: 26, color: '#8b8c92', dotColor: '#f2a63a', duration: 3 },
+  },
+  {
+    id: 'exa-navy-pill',
+    name: '元素·深色药丸',
+    category: '元素',
+    lib: 'explain',
+    description: '一句话关键结论（深底白字），解说页里的"重锤"。',
+    component: AtomNavyPill,
+    schema: [
+      { key: 'text', label: '文字', type: 'text', default: '核心能力就一件事：思考和语言' },
+      { key: 'size', label: '字号', type: 'range', default: 36, min: 18, max: 80, step: 1 },
+      { key: 'bg', label: '底色', type: 'color', default: '#22252d' },
+      { key: 'color', label: '字色', type: 'color', default: '#ffffff' },
+      { key: 'shadow', label: '投影', type: 'boolean', default: true },
+    ],
+    defaultParams: {
+      text: '核心能力就一件事：思考和语言',
+      size: 36,
+      bg: '#22252d',
+      color: '#ffffff',
+      shadow: true,
+      duration: 3,
+    },
+  },
+  {
+    id: 'exa-tag',
+    name: '元素·标签',
+    category: '元素',
+    lib: 'explain',
+    description: '一颗圆角药丸标签（默认白底深字）。要一排就多叠几张，分别调位置。',
+    component: AtomTag,
+    schema: [
+      { key: 'text', label: '文字', type: 'text', default: '可以聊天' },
+      { key: 'size', label: '字号', type: 'range', default: 30, min: 14, max: 64, step: 1 },
+      { key: 'bg', label: '底色', type: 'color', default: '#ffffff' },
+      { key: 'color', label: '字色', type: 'color', default: '#1d1e22' },
+      { key: 'border', label: '描边', type: 'boolean', default: true },
+      { key: 'shadow', label: '投影', type: 'boolean', default: true },
+    ],
+    defaultParams: {
+      text: '可以聊天',
+      size: 30,
+      bg: '#ffffff',
+      color: '#1d1e22',
+      border: true,
+      shadow: true,
+      duration: 3,
+    },
+  },
+  {
+    id: 'exa-amber-pill',
+    name: '元素·强调药丸',
+    category: '元素',
+    lib: 'explain',
+    description: '琥珀色强调药丸，用于转折 / 强调短板（"但它没有行动能力"）。',
+    component: AtomAmberPill,
+    schema: [
+      { key: 'text', label: '文字', type: 'text', default: '但它没有行动能力' },
+      { key: 'size', label: '字号', type: 'range', default: 38, min: 18, max: 80, step: 1 },
+      { key: 'bg', label: '底色', type: 'color', default: '#f2a63a' },
+      { key: 'color', label: '字色', type: 'color', default: '#ffffff' },
+      { key: 'shadow', label: '投影', type: 'boolean', default: true },
+    ],
+    defaultParams: {
+      text: '但它没有行动能力',
+      size: 38,
+      bg: '#f2a63a',
+      color: '#ffffff',
+      shadow: true,
+      duration: 3,
+    },
+  },
+  {
+    id: 'exa-number-row',
+    name: '元素·编号行',
+    category: '元素',
+    lib: 'explain',
+    description: '序号圆片 + 一句话，清单里的一条。要几条就叠几张。',
+    component: AtomNumberRow,
+    schema: [
+      { key: 'index', label: '序号', type: 'text', default: '1' },
+      { key: 'text', label: '文字', type: 'text', default: '给它一个目标' },
+      { key: 'size', label: '字号', type: 'range', default: 34, min: 16, max: 64, step: 1 },
+      { key: 'bg', label: '底色', type: 'color', default: '#ffffff' },
+      { key: 'color', label: '字色', type: 'color', default: '#1d1e22' },
+      { key: 'indexBg', label: '序号底色', type: 'color', default: '#22252d' },
+    ],
+    defaultParams: {
+      index: '1',
+      text: '给它一个目标',
+      size: 34,
+      bg: '#ffffff',
+      color: '#1d1e22',
+      indexBg: '#22252d',
+      indexColor: '#ffffff',
+      duration: 3,
+    },
+  },
+  {
+    id: 'exa-step-chip',
+    name: '元素·步骤芯片',
+    category: '元素',
+    lib: 'explain',
+    description: 'STEP 01 + 步骤名的小卡片，横向排一排（中间插箭头）就是流程。',
+    component: AtomStepChip,
+    schema: [
+      { key: 'step', label: '小标签', type: 'text', default: 'STEP 01' },
+      { key: 'text', label: '步骤名', type: 'text', default: '提问' },
+      { key: 'size', label: '字号', type: 'range', default: 30, min: 16, max: 64, step: 1 },
+      { key: 'bg', label: '底色', type: 'color', default: '#ffffff' },
+      { key: 'color', label: '字色', type: 'color', default: '#1d1e22' },
+      { key: 'stepColor', label: '小标签色', type: 'color', default: '#f2a63a' },
+    ],
+    defaultParams: {
+      step: 'STEP 01',
+      text: '提问',
+      size: 30,
+      bg: '#ffffff',
+      color: '#1d1e22',
+      stepColor: '#f2a63a',
+      duration: 3,
+    },
+  },
+  {
+    id: 'exa-arrow',
+    name: '元素·箭头',
+    category: '元素',
+    lib: 'explain',
+    description: '串在两个元素之间的连接箭头（→ ↓ ← ↑）。',
+    component: AtomArrow,
+    schema: [
+      { key: 'dir', label: '方向', type: 'select', default: 'right', options: ['right', 'down', 'left', 'up'] },
+      { key: 'size', label: '大小', type: 'range', default: 46, min: 16, max: 120, step: 2 },
+      { key: 'color', label: '颜色', type: 'color', default: '#9a9ba1' },
+    ],
+    defaultParams: { dir: 'right', size: 46, color: '#9a9ba1', duration: 3 },
+  },
+  {
+    id: 'exa-big-number',
+    name: '元素·大数字',
+    category: '元素',
+    lib: 'explain',
+    description: '从 0 滚到目标值的大数字，可配指标名、前缀后缀（"100 倍"）。',
+    component: AtomBigNumber,
+    schema: [
+      { key: 'label', label: '指标名', type: 'text', default: '' },
+      { key: 'target', label: '目标值', type: 'number', default: 100, min: -9999999, max: 9999999, step: 1 },
+      { key: 'decimals', label: '小数位', type: 'range', default: 0, min: 0, max: 4, step: 1 },
+      { key: 'prefix', label: '前缀', type: 'text', default: '' },
+      { key: 'suffix', label: '后缀', type: 'text', default: ' 倍' },
+      { key: 'size', label: '字号', type: 'range', default: 150, min: 48, max: 260, step: 2 },
+      { key: 'color', label: '颜色', type: 'color', default: '#1d1e22' },
+    ],
+    defaultParams: {
+      label: '',
+      target: 100,
+      decimals: 0,
+      prefix: '',
+      suffix: ' 倍',
+      size: 150,
+      color: '#1d1e22',
+      duration: 4,
+    },
+  },
+  {
+    id: 'exa-caption',
+    name: '元素·脚注小字',
+    category: '元素',
+    lib: 'explain',
+    description: '页脚补充说明、数据来源、口径备注。',
+    component: AtomCaption,
+    schema: [
+      { key: 'text', label: '文字', type: 'text', default: '数据来自公开资料整理' },
+      { key: 'size', label: '字号', type: 'range', default: 26, min: 14, max: 48, step: 1 },
+      { key: 'color', label: '颜色', type: 'color', default: '#8b8c92' },
+      { key: 'align', label: '对齐', type: 'select', default: 'left', options: ['left', 'center', 'right'] },
+    ],
+    defaultParams: { text: '数据来自公开资料整理', size: 26, color: '#8b8c92', align: 'left', duration: 3 },
+  },
+  {
+    id: 'exa-rule',
+    name: '元素·分隔短线',
+    category: '元素',
+    lib: 'explain',
+    description: '标题下的一小截横线，做视觉锚点（可选从左往右长出）。',
+    component: AtomRule,
+    schema: [
+      { key: 'width', label: '长度', type: 'range', default: 160, min: 20, max: 1600, step: 10 },
+      { key: 'thickness', label: '粗细', type: 'range', default: 8, min: 2, max: 32, step: 1 },
+      { key: 'color', label: '颜色', type: 'color', default: '#f2a63a' },
+      { key: 'grow', label: '生长动画', type: 'boolean', default: true },
+    ],
+    defaultParams: { width: 160, thickness: 8, color: '#f2a63a', grow: true, radius: 4, duration: 3 },
+  },
+  {
+    id: 'exa-paragraph',
+    name: '元素·正文段落',
+    category: '元素',
+    lib: 'explain',
+    description: '多行说明文字，换行即分段，逐行淡入。',
+    component: AtomParagraph,
+    schema: [
+      { key: 'text', label: '正文（换行或逗号分段）', type: 'text', default: '第一句说明。\n第二句说明。' },
+      { key: 'size', label: '字号', type: 'range', default: 30, min: 16, max: 56, step: 1 },
+      { key: 'lineHeight', label: '行距', type: 'range', default: 1.6, min: 1.2, max: 2.4, step: 0.1 },
+      { key: 'color', label: '颜色', type: 'color', default: '#4a4b50' },
+      { key: 'align', label: '对齐', type: 'select', default: 'left', options: ['left', 'center', 'right'] },
+    ],
+    defaultParams: {
+      text: '第一句说明。\n第二句说明。',
+      size: 30,
+      lineHeight: 1.6,
+      color: '#4a4b50',
+      align: 'left',
+      maxWidth: 1300,
+      duration: 4,
     },
   },
 ]

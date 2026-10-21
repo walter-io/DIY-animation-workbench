@@ -54,6 +54,19 @@ function run(srtPath) {
 const C1 = path.resolve(__dirname, '_tmp/test-corpus.srt') // 大模型横评
 const C2 = path.resolve(__dirname, '_tmp/test-corpus2.srt') // Obsidian 教程
 
+// 这两份语料和 _tmp 一起被清掉过，直接跑会抛一个看不懂的 ENOENT 堆栈。
+// 先明确报缺，并指向替代回归（verify-cardlibs.cjs 的语料放在 scripts/ 下，不会再被清）。
+for (const [name, p] of [['语料1', C1], ['语料2', C2]]) {
+  if (!fs.existsSync(p)) {
+    console.error(
+      `\n⏭️  跳过：缺少${name} ${path.relative(process.cwd(), p)}\n` +
+        '   这份语料历史上放在 scripts/_tmp/ 被清理掉了。\n' +
+        '   自动选卡的回归请改跑：node scripts/verify-cardlibs.cjs（语料在 scripts/test-corpus-kb.srt）。\n',
+    )
+    process.exit(0)
+  }
+}
+
 console.log('\n【1】挑重点：过渡段 / 口水段不出卡')
 {
   const r = run(C1)

@@ -19,7 +19,7 @@
  * 装载结果写到哪儿：
  *   EffectDef → store 的 `syncPackPlugins` / `registerPlugin` → effects = [...registry, ...plugins]
  *   SfxDef    → sfx.ts 的运行时注册表（registerSfx / unregisterSfxByPack）
- * 这里只是装载器，不碰 UI。
+ * 这里只是装载器，不碰 UI —— UI 由 `components/PackPanel.tsx` 消费下面的订阅接口。
  */
 import { useEffect } from 'react'
 import type { EffectDef } from './types'

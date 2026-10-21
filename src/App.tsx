@@ -4,6 +4,8 @@ import { skins } from './themes'
 import TopBar from './components/TopBar'
 import EffectLibrary from './components/EffectLibrary'
 import MediaLibrary from './components/MediaLibrary'
+import PackPanel from './components/PackPanel'
+import { PacksBootstrap } from './packRuntime'
 import PreviewCanvas from './components/PreviewCanvas'
 import ParameterPanel from './components/ParameterPanel'
 import Timeline from './components/Timeline'
@@ -185,7 +187,7 @@ function KeyboardShortcuts() {
 
 function EditorShell() {
   const [modal, setModal] = useState<ModalKind>(null)
-  const [leftTab, setLeftTab] = useState<'effects' | 'media'>('effects')
+  const [leftTab, setLeftTab] = useState<'effects' | 'media' | 'packs'>('effects')
   const [panelW, setPanelW] = useState(loadPanelWidth)
   const { state } = useEditor()
   const skin = skins[state.project.skin]
@@ -232,6 +234,8 @@ function EditorShell() {
       }}
     >
       <KeyboardShortcuts />
+      {/* 拓展包运行时：开机装载一次 public/packs 下启用的包，把卡注册进 store */}
+      <PacksBootstrap />
       <TopBar
         onOpenExport={() => setModal('export')}
         onOpenTemplates={() => setModal('templates')}
@@ -265,8 +269,16 @@ function EditorShell() {
             >
               素材库
             </button>
+            <button
+              type="button"
+              className={`os-left-tab ${leftTab === 'packs' ? 'active' : ''}`}
+              onClick={() => setLeftTab('packs')}
+              title="拓展包：额外购买的动效卡与音效"
+            >
+              拓展包
+            </button>
           </div>
-          {leftTab === 'effects' ? <EffectLibrary /> : <MediaLibrary />}
+          {leftTab === 'effects' ? <EffectLibrary /> : leftTab === 'media' ? <MediaLibrary /> : <PackPanel />}
         </div>
         <div className="os-center">
           <PreviewCanvas />

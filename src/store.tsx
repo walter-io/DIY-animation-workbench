@@ -9,6 +9,7 @@ import {
 import type {
   CardPreset,
   CardKeyframe,
+  CanvasBgId,
   EasingId,
   EffectDef,
   Instance,
@@ -33,12 +34,13 @@ import { remapRectOrientation, type HostLayoutId } from './hostLayouts'
 import { DEFAULT_SFX_ID, DEFAULT_SFX_VOLUME, normalizeSfxId, type SfxId } from './sfx'
 import { registry } from './registry'
 import { parseSrt } from './srt'
-import { chunkCues, suggestCardsForChunks } from './autoCards'
+import { chunkCues, suggestCardsForChunks, type AutoCardLib } from './autoCards'
 import { applyLook } from './prefs'
 import { defaultFitFor } from './hyperframes/modes'
 import { DEFAULT_PALETTE, skins } from './themes'
 import { alphaOfCssColor } from './cardOpacity'
 import { DEFAULT_CARD_SIZE, normalizeCardSize } from './cardSize'
+import { normalizeCanvasBg } from './canvasBg'
 import {
   DEFAULT_HOST_EASE,
   DEFAULT_HOST_TRANSITION,
@@ -390,6 +392,8 @@ function onlyPlayheadMoved(a: State, b: State): boolean {
 
 type Action =
   | { type: 'setSkin'; skin: SkinId }
+  /** 画布（整片）背景色：工程级，作用于整块画布 */
+  | { type: 'setCanvasBg'; bg: CanvasBgId; color?: string }
   | { type: 'setStyle'; style: Project['style'] }
   | { type: 'setFont'; font: Project['font'] }
   | { type: 'setPalette'; palette: Partial<Palette> }
@@ -472,7 +476,14 @@ type Action =
   | { type: 'setZoom'; zoom: number }
   | { type: 'toggleGrid' }
   | { type: 'addInstance'; effectId: string }
-  | { type: 'addSrtInstance'; srt: string; total: number; autoCards?: boolean }
+  | {
+      type: 'addSrtInstance'
+      srt: string
+      total: number
+      autoCards?: boolean
+      /** 自动出卡走哪个库：常规叠加小卡 / 知识解说整页卡 */
+      cardLib?: AutoCardLib
+    }
   /** 在字幕轨上新增一张字幕卡；afterId 为空表示追加到轨尾 */
   | { type: 'addSubtitleCard'; afterId?: string | null; text?: string; duration?: number }
   | { type: 'select'; id: string | null }
@@ -588,6 +599,12 @@ function baseReducer(state: State, action: Action): State {
   switch (action.type) {
     case 'setSkin':
       return commitProject(state, { ...state.project, skin: action.skin })
+    case 'setCanvasBg':
+      return commitProject(state, {
+        ...state.project,
+        canvasBg: action.bg,
+        canvasBgColor: action.color ?? state.project.canvasBgColor,
+      })
     case 'setStyle':
       return commitProject(state, { ...state.project, style: action.style })
     case 'setFont':
@@ -741,18 +758,24 @@ function baseReducer(state: State, action: Action): State {
       const subtitle = subtitles[0]
       const instances: Instance[] = [...subtitles]
 
+      const cardLib: AutoCardLib = action.cardLib === 'explain' ? 'explain' : 'regular'
       if (action.autoCards) {
-        const chunks = chunkCues(cues)
-        const suggestions = suggestCardsForChunks(chunks)
+        // 两个库的分段密度不同：解说档一页装更多同类信息（见 autoCards 的 CHUNK_PROFILE）
+        const chunks = chunkCues(cues, cardLib)
+        const suggestions = suggestCardsForChunks(chunks, cardLib)
         chunks.forEach((chunk, chunkIndex) => {
           const suggestion = suggestions[chunkIndex]
           if (!suggestion) return
           const start = chunk[0].start / 1000
           const end = chunk[chunk.length - 1].end / 1000
-          const def = effectById(state, suggestion.effectId) ?? effectById(state, 'bullet-list')
+          const def =
+            effectById(state, suggestion.effectId) ??
+            effectById(state, cardLib === 'explain' ? 'ex-tag-build' : 'bullet-list')
           if (!def) return
-          // 开场 / 收尾用铺满，论述段用内容自适应
-          const fit: CardFit = suggestion.role === 'body' ? 'auto' : 'full'
+          // 解说卡是整页幻灯片 → 一律铺满居中；
+          // 常规卡：开场 / 收尾铺满，论述段内容自适应左右交替
+          const fit: CardFit =
+            cardLib === 'explain' ? 'full' : suggestion.role === 'body' ? 'auto' : 'full'
           instances.push({
             id: uid(),
             effectId: def.id,
@@ -771,12 +794,20 @@ function baseReducer(state: State, action: Action): State {
         })
       }
 
+      // 解说卡的背景默认透明（底色统一由画布提供），而画布默认还是深色舞台色 ——
+      // 近黑文字压在深色底上直接看不见。所以生成解说卡时如果画布还没被设置过，
+      // 顺手切到米白纸感底；用户之后在「设置 → 画布背景」里随时能改。
+      const usePaper =
+        cardLib === 'explain' &&
+        (!state.project.canvasBg || state.project.canvasBg === 'auto')
+
       return commitProject(
         state,
         // 时长不用管：syncDuration 会按最后一个内容的结尾重算
         {
           ...state.project,
           instances: [...state.project.instances, ...instances],
+          ...(usePaper ? { canvasBg: 'cream' as CanvasBgId } : null),
         },
         subtitle.id,
       )
@@ -1605,6 +1636,9 @@ function normalizeProject(p: Project): Project {
     },
     cardOpacity: typeof p.cardOpacity === 'number' ? Math.max(0, Math.min(1, p.cardOpacity)) : DEFAULT_CARD_OPACITY,
     cardSize: normalizeCardSize(p.cardSize),
+    // 画布背景：老工程没有这个字段 = 跟随主题（保持原来的观感）
+    canvasBg: normalizeCanvasBg(p.canvasBg),
+    canvasBgColor: typeof p.canvasBgColor === 'string' ? p.canvasBgColor : undefined,
     // 音效：老工程没有这几个字段，补默认值（总开关按「开」，让老工程打开就有声音）
     sfxEnabled: p.sfxEnabled !== false,
     sfxVolume:

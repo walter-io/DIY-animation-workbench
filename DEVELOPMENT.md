@@ -77,6 +77,7 @@ DIY-animation-workbench/
 │      TopBar           设置/皮肤/主题色/版本三件套/导出入口
 │      EffectLibrary    左栏：分类动效库、搜索、悬停预览
 │      MediaLibrary     左栏：图片/视频素材导入
+│      PackPanel        左栏：拓展包列表与启停
 │      PreviewCanvas    中间：预览画布（所见即所得）
 │      Timeline         中间：时间轴编排
 │      ParameterPanel   右栏：选中卡的参数控件（由 schema 自动生成）
@@ -90,6 +91,9 @@ DIY-animation-workbench/
 ├─ 动效卡库/                      # ★ 卡包根目录（纯内容，非代码）
 │  ├─ README.md                   # 包规范（给做包的人看）
 │  └─ <包目录>/manifest.json + cards.js
+├─ 音效库/                        # ★ 音效包根目录（同上，两类分开管理）
+│  ├─ README.md
+│  └─ <包目录>/manifest.json + *.mp3
 │
 ├─ public/
 │  ├─ sfx/                        # 内置采样音效 mp3（在 sfx.ts 里登记）
@@ -152,6 +156,7 @@ DIY-animation-workbench/
      id: 'my-card',
      name: '我的卡',
      category: '数据',            // 必须是 effectCategories 里登记过的名字，写错 = 编译报错
+     lib: 'explain',              // 可选：'explain' = 解说库（整页卡）；不填 = 常规库（默认）
      description: '一句话说明',
      component: MyCard,
      schema: [ { key: 'label', label: '标签', type: 'text', default: '…' } ],
@@ -160,6 +165,7 @@ DIY-animation-workbench/
    ```
 
    `schema` 的 `type` 支持：`text` / `number` / `range` / `select` / `color` / `bool`，参数面板据此自动生成控件。
+   `lib: 'explain'` 的卡（解说库）一律以 `ex-` 作 id 前缀，`cardMode()` 会自动把它当独立全屏处理（默认铺满画布）。
 
 3. 若属于新分类，先在 `src/effectCategories.ts` 的联合类型与 `CATEGORY_ORDER` 里登记；注意 `src/sfx.ts` 的 `SFX_DEFAULT_BY_CATEGORY` 也按分类配默认音效，需要同步。
 
@@ -221,14 +227,15 @@ ExportModal（前端：选格式/透明/帧率/倍速/额外音轨）
 
 ## 8. 内容包体系
 
-目标：**动效卡库是一份独立的「内容」，随拷随删，主程序零内置**。
+目标：**动效卡库与音效库是完全独立的两份「内容」，随拷随删，主程序零内置**。
 
 ```
-动效卡库/<包目录>/manifest.json + cards.js         一个子目录 = 一个包，文件名随便起（中文也行）
+动效卡库/<包目录>/manifest.json + cards.js        ┐ 一个子目录 = 一个包
+音效库/<包目录>/manifest.json + *.mp3             ┘ 文件名随便起（中文也行）
 ```
 
 关键设计：**没有清单文件，也没有同步命令**。`vite.config.ts` 的 `contentPacksPlugin` 提供
-`GET /api/content` —— **每次请求都实时扫一遍这个目录**（一级子目录里找到 `manifest.json` 就认），
+`GET /api/content` —— **每次请求都实时扫一遍这两个目录**（一级子目录里找到 `manifest.json` 就认），
 所以使用者拷完刷新页面即生效；主程序里也**没有任何一个具体包的名字**。
 
 装载流程（`src/packRuntime.ts`）：
@@ -267,13 +274,18 @@ npm run dev -- --port 5199
 | 脚本 | 作用 |
 |---|---|
 | `npm run dev` | 开发服务器 |
-| `npm run build` | `tsc -b` + 生产构建到 `dist/`（同时把 `动效卡库/` 拷进去；拷贝走手写 `copyDir`，见 §10-8） |
+| `npm run build` | `tsc -b` + 生产构建到 `dist/`（同时把两个内容目录拷进去；拷贝走手写 `copyDir`，见 §10-8） |
 | `npm run lint` | oxlint |
-| `npm run sync:hf` | 重建 hyperframes 资源清单（注意：会把精简掉的模板同步回来） |
+| `npm run sync:hf` | 重建 hyperframes 资源清单 |
+| `npm run verify:packs` | 内容包端到端（自动发现→加入库→分包停用→重新启用） |
+| `node scripts/smoke-dist.mjs`（`npm run smoke:dist`） | **不需要 dev server**：纯静态托管 `dist/`，回归「构建产物里的内容包是否可用」 |
 | `npm run verify:sfx` / `verify:subtitle` / `verify:ui` / `verify:panel` / `verify:video` / `verify:subs` / `verify:margin` / `verify:hf` | 各模块自检 |
 | `npm run audit:layout` | 布局审计 |
+| `node scripts/verify-cardlibs.cjs` | **不需要 dev server**：自动选卡双卡库（常规 / 知识）回归，21 条断言。需先 `npx tsc -p tsconfig.autocards.json` |
+| `node scripts/diag-autocards.cjs <srt>` | 打印某份字幕的分段边界与选卡结果（调密度时用） |
 
-全部 verify 脚本都要求 dev server 已经挂着（读环境变量 `VERIFY_BASE`，缺省用各脚本里的默认值）。
+全部 verify 脚本都要求 dev server 已经挂着（读环境变量 `VERIFY_BASE`，缺省用各脚本里的默认值）——
+**除了 `verify-cardlibs.cjs` / `diag-autocards.cjs`**，这两个是纯 Node 算法回归，直接把 `src/{autoCards,script,srt,types}.ts` 编到 `.ac-out/` 后 `require` 进去跑（见 §11）。
 
 ---
 
@@ -291,3 +303,65 @@ npm run dev -- --port 5199
    - **正确做法**：内容拷贝一律走 `vite.config.ts` 里的手写 `copyDir()`（`readdirSync` + `copyFileSync`），别用 `cpSync`。同理，构建脚本里凡是碰中文源/目标路径的 `cpSync` / `cp` 都要留意。
    - 附带教训：`writeBundle` 之后 dist 若异常，先怀疑进程崩溃，而不是钩子时机。
 9. **静态托管的 dist 要拿 ASCII 别名**：中文目录名 `动效卡库/` 在某些静态服务器 / 工具链上会出问题，所以 `writeBundle` 会额外把内容拷一份到 `dist/content/{cards,sounds}`；前端 `fetchContentIndex()` 与卡入口都按「先 ASCII 别名、失败再回退中文路径」探测。`scripts/smoke-dist.mjs` 专门用纯静态服务器托管 `dist/` 来回归这条链路（不依赖 dev server）。
+
+---
+
+## 11. 自动出卡：两个卡库（`Xxx` 的必经之路）
+
+导入口播稿时可以选生成**常规动效卡**还是**知识动效卡**，两条链路共用 `src/autoCards.ts`，但取不同的分段档位与候选卡表。
+
+```
+parseSrt → chunkCues(cues, lib) → suggestCardsForChunks(chunks, lib) → addSrtInstance 落卡
+                    ▲                          ▲
+              CHUNK_PROFILE[lib]        CANDIDATES / EXPLAIN_CANDIDATES
+```
+
+| | 常规库 `lib: 'regular'` | 知识库 `lib: 'explain'` |
+|---|---|---|
+| 候选卡表 | `CANDIDATES`（`srcvid-*` / 覆盖型小卡） | `EXPLAIN_CANDIDATES`（`ex-*` 整页幻灯片） |
+| 硬上限 | 12s / 90 字 | 20s / 150 字 |
+| 落到画布 | 开场收尾 `fit:'full'`，论述段 `auto` 左右交替 | 一律 `fit:'full'` + `slot:'center'` |
+| 门控（`SALIENCE_GATE`） | 3 —— 过渡段不出卡 | 1 —— 整页留空很难看，宁可出一页轻内容 |
+| 每页条目上限 | 3~4 条 | 清单 6 / 步骤 5 / 标签 8 / 对比左右各 5 |
+
+### 改这块之前必须知道的四件事
+
+1. **`leadFamily` 里的步骤标记必须"句中才算"**：口播进入流程时说的是「接下来讲怎么用，第一步，…」，
+   只看句首会判成 `trans` 家族，于是它和后面的「第二步/第三步」分属不同家族、家族守卫失效，
+   一套四步流程被拆成「1 步一页 + 3 步一页」。所以用 `/第[一二三四五六]步/` 不带 `^`。
+2. **序列不许腰斩**：`RANK_SEQ`（名次）和 `STEP_SEQ`（步骤）命中时 `inSeq` 为真，会**跳过全部断句条件**
+   （包括硬上限），额度是 `SEQ_MAX_DUR`。否则一串 6 项排名会被切成三段，观众看不出名次关系。
+   代价是常规库会出现超过 12s 的页 —— 这是有意的，`verify-cardlibs.cjs` 里专门断言"超 12s 的页必须发生在序列里"。
+3. **`f.phrases` 里没有步骤名**：`cuesToPhrases` 会把「第一步，」这种 3 字标记当碎片丢掉，
+   所以步骤名必须走 `f.stepTexts`（`stepTextsOf()` 从**原始字幕**抽：取"第N步"后到第一个逗号为止）。
+   早期版本的 `phrases.filter(STEP_MARK)` 恒为空，步骤卡会误判成"这一段没有步骤"。
+   同理，`f.steps`（标记个数）也必须从原文数。
+4. **排名页的条目不能只取英文实体**：名次常常挂在中文名上（"第一梯队是混元四"），
+   实体识别只认识拉丁词，直接 `f.tools` 会让第一梯队凭空消失。走 `rankItems()`，
+   它优先取**带名次标记的短句**，再用 `dedupeTier()` 去掉重复档位（"第一梯队" vs "第一梯队是混元四"）。
+
+### 回归验证
+
+```bash
+npx tsc -p tsconfig.autocards.json
+node -e "require('fs').writeFileSync('.ac-out/package.json', JSON.stringify({type:'commonjs'}))"
+node scripts/verify-cardlibs.cjs      # 语料 scripts/test-corpus-kb.srt
+```
+
+> 语料放在 `scripts/` 而不是 `scripts/_tmp/`：`_tmp` 会被定期清理，语料一丢这个回归就静默废掉了
+>（`verify-autocards3.cjs` 现在就是这么坏的 —— 它依赖的 `_tmp/test-corpus*.srt` 已经被清掉）。
+>
+> ⚠️ 编译这一步要用 PowerShell / cmd 跑。在 Bash 沙箱里跑 `npx tsc -p tsconfig.autocards.json`
+> 会出现「退出码 0、报错文件也写了，但 `.ac-out/` 的 mtime 没变」的情况，容易误以为改了没生效。
+> 另一个坑：`tsconfig.autocards.json` 只 `include` 了 4 个文件，但 `autoCards → prefs → sfx` 会
+> 把 `src/sfx.ts` 带进来，它在 `module: commonjs` 下报 `import.meta` 的错（TS1343）。
+> **这两个错不影响产物**（tsc 默认 `noEmitOnError: false`），别去改 sfx。
+
+### 已知缺口
+
+- **口播稿里的中文数字解析不出来**：`script.ts` 的 `metricNumbers()` 只认 `\d+`，
+  而 ASR / 手写稿常把数字写成「百分之九十二」「一百倍」「三成」。
+  后果是这类段落拿不到 `pairs`（实体-数值对），数据页 / 对比条 / 环形图全部不触发，
+  只能退成文字清单页（实测：一段"效率提升一百倍 / 正确率 92%→61%"被做成了三行残句清单）。
+  想补的话要注意：中文数字同时也是**序号**（第一/第四步）和**型号**（混元四、千问三），
+  这两类必须排掉，否则会往数据卡里灌假数字 —— 正好踩中这个仓库最在意的"不造数"红线。

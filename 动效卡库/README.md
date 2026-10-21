@@ -52,6 +52,7 @@ export default [
     id: 'pack-insight-value',   // 全局唯一，建议加前缀，和内置卡区分
     name: '洞察数值卡',
     category: '数据',            // 用主程序已有的分类，动效库里才会归到对应分组
+    lib: 'explain',              // 可选：'explain' = 归入解说库；不填 = 常规库（默认）
     description: '一句话说明',
     component: InsightValueCard, // (props: { params, progress, meta }) => ReactElement
     schema: [                    // 参数面板据此自动生成控件
@@ -72,3 +73,4 @@ export default [
 
 - 卡 id **不要和内置卡重名**（重名会被跳过，装不进去）。
 - 工程里引用了没装载的卡时，实例仍留在时间轴上并提示缺卡；重新装回来就恢复，**不会丢编排**。
+- 音效不在这个目录里 —— 音效请放邻居的 `音效库/`。

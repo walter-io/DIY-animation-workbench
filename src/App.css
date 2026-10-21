@@ -2042,6 +2042,82 @@ body.os-resizing {
   font-size: 11px;
 }
 
+/* 库页签：常规库 / 解说库 —— 两个库各有自己的分类分组 */
+.os-lib-tabs {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  padding: 8px 10px 0;
+  background: var(--ui-panel);
+}
+
+.os-lib-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: var(--ui-bg);
+  color: var(--ui-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.os-lib-tab:hover {
+  background: var(--ui-panel-hover);
+  color: var(--ui-text);
+}
+
+.os-lib-tab.active {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--stage-data), var(--stage-primary));
+  color: #fff;
+}
+
+.os-lib-tab-count {
+  padding: 0 5px;
+  border-radius: 6px;
+  background: rgba(127, 127, 127, 0.18);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.os-lib-tab.active .os-lib-tab-count {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+/* 页签标题下的一行小字说明（"叠加在口播画面上"之类） */
+.os-lib-header-sub {
+  margin-left: 6px;
+  color: var(--ui-text-muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+/* 当前库没搜到、另一个库有命中时的切库入口 */
+.os-lib-otherlib {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border: 1px dashed var(--ui-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ui-text-muted);
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.os-lib-otherlib:hover {
+  background: var(--ui-panel-hover);
+  color: var(--ui-text);
+}
+
 /* 搜索条独立于滚动容器之外（在 JSX 里是 .os-panel-body 的兄弟节点），
    所以列表滚多远它都钉在库顶部。之前它躺在 .os-panel-body 里，会随滚动一起被推走。 */
 .os-lib-searchbar {
@@ -3603,6 +3679,17 @@ html.os-render-alpha .os-canvas-wrapper {
   font-size: 13px;
   color: var(--ui-text-muted);
   line-height: 1.6;
+}
+/* 生成类型（常规 / 知识动效卡）选择区 */
+.os-srt-lib {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.os-srt-lib-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-text-muted);
 }
 .os-srt-actions {
   display: flex;

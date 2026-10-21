@@ -21,16 +21,27 @@ export const MODE_LABELS: Record<LayoutMode, string> = {
 
 /** hf 模板 → 画面模式（defaultMode + allowedModes，源自目标仓库 catalog director） */
 export const hfModes: Record<string, { default: LayoutMode; allowed: LayoutMode[] }> = {
+  'bar-chart-grow': { default: 'data', allowed: ['data', 'fullscreen'] },
   'number-counter': { default: 'fullscreen', allowed: ['fullscreen', 'data'] },
   'line-chart-draw': { default: 'data', allowed: ['data', 'fullscreen'] },
   'metric-pulse': { default: 'fullscreen', allowed: ['fullscreen', 'data'] },
   'big-number-card': { default: 'fullscreen', allowed: ['fullscreen'] },
   'before-after-stat': { default: 'fullscreen', allowed: ['fullscreen', 'data'] },
+  'horizontal-bar-compare': { default: 'data', allowed: ['data', 'fullscreen'] },
+  'top-rank-list': { default: 'fullscreen', allowed: ['fullscreen', 'data'] },
   'turning-point-line': { default: 'data', allowed: ['data', 'fullscreen'] },
+  'source-citation-card': { default: 'overlay', allowed: ['overlay', 'fullscreen'] },
+  'stat-duel': { default: 'overlay', allowed: ['overlay'] },
   'status-split': { default: 'transition', allowed: ['transition', 'fullscreen'] },
+  'number-impact': { default: 'overlay', allowed: ['overlay', 'fullscreen'] },
   'concept-spotlight': { default: 'overlay', allowed: ['overlay', 'fullscreen'] },
+  'three-step-flow': { default: 'fullscreen', allowed: ['fullscreen'] },
   'myth-fact-swap': { default: 'transition', allowed: ['transition', 'fullscreen'] },
+  'key-point-marker': { default: 'overlay', allowed: ['overlay'] },
+  'checklist-pop': { default: 'overlay', allowed: ['overlay', 'fullscreen'] },
+  'timeline-scan': { default: 'overlay', allowed: ['overlay', 'fullscreen', 'data'] },
   'cause-chain': { default: 'overlay', allowed: ['overlay', 'fullscreen'] },
+  'compact-number-callout': { default: 'fullscreen', allowed: ['fullscreen'] },
   'mode-choice-compare': { default: 'fullscreen', allowed: ['fullscreen'] },
   'iteration-loop': { default: 'fullscreen', allowed: ['fullscreen'] },
 }
@@ -81,6 +92,10 @@ export function cardMode(effectId: string): LayoutMode {
     const tpl = effectId.slice(3)
     return hfModes[tpl]?.default ?? 'fullscreen'
   }
+  // 解说类（ex- 前缀）一律独立全屏：它是"整页幻灯片"，不是贴在画面上的小卡
+  if (effectId.startsWith('ex-')) return 'fullscreen'
+  // 解说元素卡（exa- 前缀）是零件：内容自适应、可自由叠加，走 overlay
+  if (effectId.startsWith('exa-')) return 'overlay'
   return reactCardModes[effectId] ?? 'overlay'
 }
 
@@ -92,7 +107,7 @@ export function defaultFitFor(effectId: string): 'auto' | 'box' | 'full' {
   if (effectId.startsWith('hf-')) {
     return hfModes[effectId.slice(3)]?.default === 'overlay' ? 'auto' : 'full'
   }
-  return reactCardModes[effectId] === 'fullscreen' ? 'full' : 'auto'
+  return cardMode(effectId) === 'fullscreen' ? 'full' : 'auto'
 }
 
 /** 一张卡是否允许以某槽位放置（fullscreen 建议 center/free，overlay 建议 left/right/bottom） */

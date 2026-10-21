@@ -23,6 +23,7 @@ export const CATEGORY_ORDER = [
   '结尾',
   '字幕',
   '装饰',
+  '元素',
   '大屏模板',
 ] as const
 
@@ -42,6 +43,7 @@ export const CATEGORY_HINTS: Record<EffectCategory, string> = {
   结尾: '收尾、总结、CTA',
   字幕: '口播字幕',
   装饰: '纯氛围点缀',
+  元素: '解说零件：标题/药丸/标签，自由叠加成一页',
   大屏模板: '1920×1080 全屏独立镜头',
 }
 
