@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>口播动效编辑台 · 项目封面 v3</title>
+<style>
+  :root{
+    --navy:#16233f; --navy2:#27406e;
+    --amber:#f5a623; --amber-soft:#ffd98a;
+    --teal:#28b894;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:#101828;}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    display:flex;justify-content:center;
+  }
+  .cover{
+    position:relative;
+    width:1280px;height:720px;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(245,166,35,0.16), transparent 34%),
+      radial-gradient(circle at 94% 100%, rgba(40,184,148,0.18), transparent 38%),
+      radial-gradient(circle at 50% 38%, rgba(39,64,110,0.9), transparent 60%),
+      linear-gradient(160deg,#141f38 0%,#16233f 55%,#1a2c50 100%);
+    overflow:hidden;
+  }
+  .cover::before{
+    content:"";position:absolute;inset:0;
+    background-image:radial-gradient(rgba(255,255,255,0.055) 1px, transparent 1px);
+    background-size:28px 28px;
+    pointer-events:none;
+  }
+  .inner{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;padding:56px 60px 0;}
+
+  .chip{
+    display:inline-flex;align-items:center;gap:10px;
+    font-size:21px;font-weight:700;color:#d7e2f8;letter-spacing:4px;
+    background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.16);
+    padding:9px 22px;border-radius:999px;
+  }
+  .chip .dot{width:10px;height:10px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 4px rgba(245,166,35,0.25);}
+
+  .title{
+    margin-top:34px;
+    font-size:146px;line-height:1.04;font-weight:900;color:#ffffff;
+    letter-spacing:6px;white-space:nowrap;
+    text-shadow:0 12px 40px rgba(0,0,0,0.45);
+  }
+  .title .hl{
+    background:linear-gradient(180deg,#ffe2a6 0%,#f5a623 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+
+  .sub{
+    margin-top:26px;font-size:30px;font-weight:700;color:var(--amber-soft);letter-spacing:3px;
+    display:flex;align-items:center;gap:16px;white-space:nowrap;
+  }
+  .sub .arr{color:var(--teal);font-weight:900;}
+
+  /* bottom mini scene */
+  .stage{position:relative;margin-top:44px;}
+  .video{
+    position:relative;width:840px;height:188px;border-radius:16px;overflow:hidden;
+    background:linear-gradient(160deg,#22375f,#2c4a7d 75%);
+    border:1px solid rgba(255,255,255,0.14);
+    box-shadow:0 24px 60px rgba(0,0,0,0.45);
+  }
+  .video .scene{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+  .person{display:flex;flex-direction:column;align-items:center;}
+  .person .head{width:88px;height:88px;border-radius:50%;background:#e9d3b3;box-shadow:0 6px 16px rgba(0,0,0,0.3);}
+  .person .shoulders{width:168px;height:64px;border-radius:90px 90px 0 0;background:#e9d3b3;margin-top:-10px;}
+  .video .eq{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);display:flex;gap:4px;align-items:flex-end;height:20px;}
+  .video .eq i{width:4px;background:var(--amber-soft);border-radius:2px;display:block;}
+  .video .caption{
+    position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+    background:rgba(0,0,0,0.45);color:#fff;font-size:14px;padding:5px 14px;border-radius:8px;
+    white-space:nowrap;
+  }
+  .video .play{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-58%);
+    width:58px;height:58px;border-radius:50%;
+    background:rgba(245,166,35,0.95);box-shadow:0 10px 26px rgba(0,0,0,0.4);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .video .play::after{
+    content:"";display:block;margin-left:5px;
+    border-left:18px solid #16233f;border-top:11px solid transparent;border-bottom:11px solid transparent;
+  }
+
+  /* floating cards */
+  .ec{position:absolute;background:#fff;border-radius:12px;padding:10px 13px;
+      box-shadow:0 16px 36px rgba(0,0,0,0.4);z-index:5;}
+  .ec .tag{font-size:11px;color:var(--teal);font-weight:800;letter-spacing:1px;}
+  .ec.a{top:-46px;left:-42px;transform:rotate(-4deg);}
+  .ec.a .big{font-size:24px;font-weight:900;color:var(--navy);margin-top:3px;white-space:nowrap;}
+  .ec.b{top:-38px;right:-36px;transform:rotate(3deg);text-align:center;}
+  .ec.b .num{font-size:32px;font-weight:900;color:var(--amber);line-height:1;}
+  .ec.b .lab{font-size:12px;color:#6f7480;margin-top:5px;}
+  .ec.c{bottom:-30px;right:96px;transform:rotate(2deg);}
+  .ec.c .row{display:flex;align-items:center;gap:7px;font-size:13px;color:#3c4350;margin-top:6px;white-space:nowrap;}
+  .ec.c .row:first-child{margin-top:0;}
+  .ec.c .ck{width:15px;height:15px;border-radius:5px;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;}
+
+  /* corner brand */
+  .brand{
+    position:absolute;top:22px;left:26px;display:flex;align-items:center;gap:10px;
+  }
+  .brand .mark{
+    width:34px;height:34px;border-radius:9px;
+    background:linear-gradient(135deg,#27406e,#28b894 160%);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .brand .en{font-size:11px;font-weight:800;color:#8ea6d0;letter-spacing:2.5px;}
+</style>
+</head>
+<body>
+  <div class="cover">
+    <div class="brand">
+      <div class="mark">
+        <svg width="20" height="20" viewBox="0 0 30 30" fill="none">
+          <rect x="3" y="6" width="24" height="18" rx="4" fill="rgba(255,255,255,0.14)"/>
+          <path d="M12 11.5l6 3.5-6 3.5z" fill="#ffd98a"/>
+          <rect x="20.5" y="9.5" width="3" height="11" rx="1.5" fill="#fff"/>
+          <rect x="6.5" y="9.5" width="3" height="11" rx="1.5" fill="#fff"/>
+        </svg>
+      </div>
+      <div class="en">DIY ANIMATION WORKBENCH</div>
+    </div>
+
+    <div class="inner">
+      <span class="chip"><span class="dot"></span>口播视频 · 动效叠加工具</span>
+
+      <div class="title">口播<span class="hl">动效</span>编辑台</div>
+
+      <div class="sub">导入口播稿<span class="arr">→</span>自动生成动效卡<span class="arr">→</span>一键叠加成片</div>
+
+      <div class="stage">
+        <div class="video">
+          <div class="scene"><div class="person"><div class="head"></div><div class="shoulders"></div></div></div>
+          <div class="eq">
+            <i style="height:7px"></i><i style="height:15px"></i><i style="height:10px"></i>
+            <i style="height:19px"></i><i style="height:9px"></i><i style="height:14px"></i>
+          </div>
+          <div class="play"></div>
+          <div class="caption">正在讲解：什么是大语言模型</div>
+        </div>
+
+        <div class="ec a">
+          <div class="tag">标题卡</div>
+          <div class="big">大语言模型</div>
+        </div>
+        <div class="ec b">
+          <div class="num">×100</div>
+          <div class="lab">效率提升</div>
+        </div>
+        <div class="ec c">
+          <div class="row"><span class="ck">✓</span>自动出卡</div>
+          <div class="row"><span class="ck">✓</span>一键导出</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

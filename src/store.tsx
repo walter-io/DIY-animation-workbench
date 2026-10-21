@@ -36,7 +36,7 @@ import { registry } from './registry'
 import { parseSrt } from './srt'
 import { chunkCues, suggestCardsForChunks, type AutoCardLib } from './autoCards'
 import { applyLook } from './prefs'
-import { defaultFitFor } from './hyperframes/modes'
+import { defaultFitFor, slotOkForMode } from './hyperframes/modes'
 import { DEFAULT_PALETTE, skins } from './themes'
 import { alphaOfCssColor } from './cardOpacity'
 import { DEFAULT_CARD_SIZE, normalizeCardSize } from './cardSize'
@@ -67,6 +67,7 @@ import {
   splitLegacySubtitleInstance,
 } from './subtitleTrack'
 import { hydrateAssetUrls, serializeProject } from './mediaPersistence'
+import { SLOT_ORDER, laneOf, pickPlacement } from './tracks'
 
 export const DEFAULT_HOST: HostConfig = {
   layout: 'off',
@@ -91,14 +92,7 @@ export const DEFAULT_HOST: HostConfig = {
 const STORAGE_KEY = 'animation-editor-project-v1'
 const HISTORY_LIMIT = 100
 
-/** slot（画布左/右/中/下/上）→ 默认所在通用轨道号（字幕轨是第 0 条，所以动效卡从 1 起算） */
-const SLOT_TRACK: Record<SlotId, number> = {
-  left: 1,
-  right: 2,
-  center: 3,
-  bottom: 4,
-  top: 5,
-}
+// slot（画布左/右/中/下/上）→ 默认轨道号、以及新卡落位的挑法，统一在 ./tracks（时间轴、画布、新增卡共用一份）
 /**
  * 新建工程的默认「背景不透明度」。
  * 滑杆上的「背景透明度」= 100% - 这个值，也就是 65% —— 玻璃卡的常规观感。
@@ -720,18 +714,38 @@ function baseReducer(state: State, action: Action): State {
       const idx = state.project.instances.length
       const fit = defaultFitFor(def.id)
       // 铺满画布的卡默认居中，其余按左右交替
-      const slot: SlotId = fit === 'full' ? 'center' : idx % 2 === 0 ? 'left' : 'right'
-      // 新卡落到对应的通用轨道（左→轨道1、右→轨道2、居中→轨道3…），方便直接在轨道上排布
-      const track = SLOT_TRACK[slot] ?? 1
+      const natural: SlotId = fit === 'full' ? 'center' : idx % 2 === 0 ? 'left' : 'right'
+      // 候选槽位：默认槽位打头，其余按"允许的槽位"排（铺满卡只有 center —— 它铺的是整屏，
+      // 换槽位没有意义，只能换轨道；fullscreen 卡也不该被塞进半屏槽位）
+      const allowed = SLOT_ORDER.filter((s) => slotOkForMode(def.id, s).ok)
+      const slots: SlotId[] =
+        fit === 'full' ? ['center'] : [natural, ...allowed.filter((s) => s !== natural)]
+      // 轨道上限：现有轨道数（用户手动加的 + 已经用到的），不凭空造新轨道
+      const maxLane = Math.max(
+        state.trackCount,
+        state.project.instances.reduce((m, i) => (isSubtitle(i) ? m : Math.max(m, laneOf(i))), 1),
+      )
+      const duration = Number(def.defaultParams.duration ?? 2)
+      // 落位：不要让新卡压在已有的卡身上（同轨道叠行 / 同槽位硬压）——见 pickPlacement
+      const place = pickPlacement(
+        state.project.instances,
+        {
+          // 就落在播放头处，不再被工程时长往回拉（时长本身会跟着新卡自动变长）
+          start: Math.max(0, Math.min(state.currentTime, MAX_TIMELINE - 2)),
+          duration,
+          fit,
+          slots,
+        },
+        maxLane,
+      )
       const inst: Instance = {
         id: uid(),
         effectId: def.id,
         name: def.name,
-        // 就落在播放头处，不再被工程时长往回拉（时长本身会跟着新卡自动变长）
-        start: Math.max(0, Math.min(state.currentTime, MAX_TIMELINE - 2)),
-        duration: Number(def.defaultParams.duration ?? 2),
-        slot,
-        track,
+        start: Math.max(0, Math.min(place.start, MAX_TIMELINE - Math.max(0.1, duration))),
+        duration,
+        slot: place.slot,
+        track: place.track,
         fit,
         paint: [],
         params: { ...def.defaultParams },

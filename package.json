@@ -14,12 +14,17 @@
     "verify:subtitle": "tsc -p tsconfig.verify.json && node -e \"require('fs').writeFileSync('.verify-out/package.json', JSON.stringify({type:'commonjs'}))\" && node scripts/verify-subtitle-track.cjs",
     "verify:ui": "node scripts/verify-bg-and-subtitles.cjs",
     "verify:panel": "node scripts/verify-panel-tools.cjs",
+    "verify:panel-header": "node scripts/verify-panel-header.cjs",
+    "verify:addcard-place": "node scripts/verify-addcard-place.cjs",
+    "audit:contrast": "node scripts/audit-contrast.cjs",
     "verify:video": "node scripts/verify-video-sync.cjs",
     "verify:subs": "node scripts/verify-subtitle-style.cjs",
     "verify:margin": "node scripts/verify-auto-margin.cjs",
     "verify:sfx": "node scripts/verify-sfx.cjs",
     "verify:packs": "node scripts/verify-packs.cjs",
-    "smoke:dist": "node scripts/smoke-dist.mjs"
+    "smoke:dist": "node scripts/smoke-dist.mjs",
+    "verify:readability": "node scripts/verify-readability.cjs",
+    "verify:color-edit": "node scripts/verify-color-edit.cjs"
   },
   "dependencies": {
     "playwright": "^1.62.1",

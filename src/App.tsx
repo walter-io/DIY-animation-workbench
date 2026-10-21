@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { EditorProvider, useEditor } from './store'
-import { skins } from './themes'
+import { skins, readableOn } from './themes'
 import TopBar from './components/TopBar'
 import EffectLibrary from './components/EffectLibrary'
 import MediaLibrary from './components/MediaLibrary'
@@ -222,6 +222,12 @@ function EditorShell() {
     // 面板强调色（滑竿、选中态、聚焦环）也跟随主色
     '--ui-accent-color': accentColor,
     '--ui-accent-color-soft': `color-mix(in srgb, ${accentColor} 18%, transparent)`,
+    /**
+     * 压在实心主色上的文字颜色：按主色亮度选近黑 / 白。
+     * 浅色皮肤的主色是 #0f8fc9（中等亮度），原来一律配白字只有 3.7:1，
+     * 「铺满画布 / 本卡单独设置」这类 10~12px 按钮文字就发飘；改成按亮度选色后 5.3:1。
+     */
+    '--ui-on-accent': readableOn(accentColor, '#0b0f14', '#ffffff'),
   } as React.CSSProperties
 
   return (

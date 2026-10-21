@@ -71,20 +71,37 @@
   flex-shrink: 0;
 }
 
+/**
+ * 库头部：左「动效库 (n)」+ 右「详情 / 简洁 · 全收」。
+ *
+ * 面板默认宽只有 220px（可拖到 180px），标题 + 三个按钮本来就贴着极限。
+ * 所以这里同时上三道保险：
+ *   1. flex-wrap —— 真放不下时按钮整组换到第二行，永远不会越出面板被裁掉；
+ *   2. justify-content: space-between + 按钮组 margin-left: auto —— 换行后仍贴右；
+ *   3. 标题 flex: 0 0 auto（不压缩）、按钮组 flex: 0 0 auto —— 谁都不许被压扁。
+ * 长说明文字不在这里，见下方 .os-lib-hint。
+ */
 .os-panel-header-lib {
   justify-content: space-between;
-  gap: 8px;
+  gap: 4px 8px;
   padding: 0 10px 0 16px;
+  flex-wrap: wrap;
+  height: auto;
+  min-height: 36px;
 }
 
 .os-lib-header-title {
   white-space: nowrap;
+  flex: 0 0 auto;
+  min-width: 0;
 }
 
 .os-lib-header-actions {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .os-panel-body {
@@ -551,7 +568,9 @@ input[type='range']:focus-visible::-moz-range-thumb {
   gap: 8px;
   padding: 3px 8px;
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.5);
+  /* 画布可能是白的（白色主题）：0.5 的黑压在白上只有 3.98:1，10px 白字读不清。
+     压到 0.68 后约 5.5:1，和 SAFE AREA 角标同一档。 */
+  background: rgba(0, 0, 0, 0.68);
   color: #fff;
   font-size: 10px;
   pointer-events: none;
@@ -565,7 +584,8 @@ input[type='range']:focus-visible::-moz-range-thumb {
   padding: 3px 8px;
   border-radius: 4px;
   border: 1px solid rgba(255, 209, 102, 0.7);
-  background: rgba(0, 0, 0, 0.35);
+  /* 遮罩加浓：这块压在"画布"上，而画布可能是白色（白底 + 淡遮罩 + 黄字只有 1.8:1） */
+  background: rgba(0, 0, 0, 0.68);
   color: #ffd166;
   font-size: 10px;
   letter-spacing: 0.08em;
@@ -636,6 +656,30 @@ input[type='range']:focus-visible::-moz-range-thumb {
 .os-inst-auto .os-inst-body {
   width: max-content;
   max-width: 100%;
+}
+
+/* 单卡错误兜底提示：某张动效卡抛错时顶替它的内容，不牵连整个编辑台 */
+.os-card-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px dashed var(--ui-danger);
+  border-radius: 10px;
+  background: var(--ui-danger-bg);
+  color: var(--ui-text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.os-card-error-msg {
+  color: var(--ui-danger);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  word-break: break-all;
+}
+.os-card-error-tip {
+  color: var(--ui-text-muted);
 }
 
 /* 通用动效卡容器：尺寸一律由外层 .os-inst 决定，卡内不再自己撑满 */
@@ -1193,10 +1237,12 @@ html.os-render-alpha .os-card::before,
   gap: 8px;
   margin-bottom: 8px;
 }
+/* 播放 / 导出这类实心按钮：跟随 UI 主题（深色界面=白底黑字，浅色界面=深底浅字），
+   原来写死 #fff 在浅色界面上按钮形状直接消失 */
 .os-transport .os-btn:not(.os-btn-ghost) {
-  background: #fff;
-  border-color: #fff;
-  color: #111;
+  background: var(--ui-text);
+  border-color: var(--ui-text);
+  color: var(--ui-bg);
   font-weight: 700;
   min-width: 64px;
 }
@@ -1227,11 +1273,11 @@ html.os-render-alpha .os-card::before,
 }
 .os-btn-danger {
   background: transparent;
-  color: #ff6b6b;
-  border: 1px solid rgba(255, 107, 107, 0.4);
+  color: var(--ui-danger);
+  border: 1px solid var(--ui-danger-soft);
 }
 .os-btn-danger:hover {
-  background: rgba(255, 107, 107, 0.12);
+  background: var(--ui-danger-bg);
 }
 .os-time {
   font-size: 11px;
@@ -1253,10 +1299,10 @@ html.os-render-alpha .os-card::before,
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border: 1px solid rgba(90, 200, 250, 0.45);
+  border: 1px solid color-mix(in srgb, var(--ui-soft-data) 45%, transparent);
   border-radius: 999px;
-  background: rgba(90, 200, 250, 0.1);
-  color: #5ac8fa;
+  background: color-mix(in srgb, var(--ui-soft-data) 12%, transparent);
+  color: var(--ui-soft-data);
   font-size: 10px;
   white-space: nowrap;
 }
@@ -1460,20 +1506,22 @@ body.os-resizing {
   padding-left: 4px;
   flex-shrink: 0;
 }
+/* 轨道号配色：原来写死的是"给深色画布调"的亮色，浅色界面上
+   「轨道2/3/4」压在浅灰上只有 1.4~2.3:1，几乎看不见。改用 UI 专用语义色。 */
 .os-track-label:nth-child(2) {
-  color: #5ac8fa;
+  color: var(--ui-soft-data);
 }
 .os-track-label:nth-child(3) {
-  color: #8b9dff;
+  color: var(--ui-soft-primary);
 }
 .os-track-label:nth-child(4) {
-  color: #ff7ab0;
+  color: var(--ui-soft-assist);
 }
 .os-track-label:nth-child(5) {
-  color: #ffd166;
+  color: var(--ui-soft-special);
 }
 .os-track-label:nth-child(6) {
-  color: #5fd0c0;
+  color: var(--ui-soft-data);
 }
 .os-ruler {
   position: relative;
@@ -1907,7 +1955,7 @@ body.os-resizing {
   padding: 0 2px;
 }
 .os-paint-item-x:hover {
-  color: #ff6b6b;
+  color: var(--ui-danger);
 }
 .os-paint-swatches-inline {
   display: grid;
@@ -2074,7 +2122,7 @@ body.os-resizing {
 
 .os-lib-tab.active {
   border-color: transparent;
-  background: linear-gradient(135deg, var(--stage-data), var(--stage-primary));
+  background: linear-gradient(135deg, var(--ui-grad-from), var(--ui-grad-to));
   color: #fff;
 }
 
@@ -2087,15 +2135,23 @@ body.os-resizing {
 }
 
 .os-lib-tab.active .os-lib-tab-count {
-  background: rgba(255, 255, 255, 0.24);
+  /* 压深而不是提亮：亮色块 + 白字在两种主题下都只有 1.6:1 */
+  background: rgba(0, 0, 0, 0.24);
 }
 
-/* 页签标题下的一行小字说明（"叠加在口播画面上"之类） */
-.os-lib-header-sub {
-  margin-left: 6px;
+/* 库页签下的一行小字说明（"叠加在口播画面上"之类）。
+   以前它挂在库标题右边，长句子会把「详情 / 简洁」挤出面板（面板只有 220px 宽），
+   所以挪到页签下独占一行 —— 占满整行宽度，再长也只会省略号收尾。 */
+.os-lib-hint {
+  flex-shrink: 0;
+  padding: 5px 12px 0;
+  background: var(--ui-panel);
   color: var(--ui-text-muted);
   font-size: 10px;
-  font-weight: 400;
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 当前库没搜到、另一个库有命中时的切库入口 */
@@ -2209,8 +2265,18 @@ body.os-resizing {
 }
 
 .os-panel-header-lib .os-lib-mode-btn {
-  padding: 3px 7px;
+  padding: 3px 6px;
   font-size: 10px;
+}
+
+/* 头部的控件整体再收窄一档：220px 面板里「动效库 (123)」+ 三个按钮才排得进同一行 */
+.os-panel-header-lib .os-lib-mode {
+  padding: 2px;
+  gap: 3px;
+}
+
+.os-panel-header-lib .os-lib-cat-all {
+  padding: 3px 5px;
 }
 
 .os-lib-mode-btn:hover {
@@ -2218,7 +2284,7 @@ body.os-resizing {
 }
 
 .os-lib-mode-btn.active {
-  background: linear-gradient(135deg, var(--stage-data), var(--stage-primary));
+  background: linear-gradient(135deg, var(--ui-grad-from), var(--ui-grad-to));
   color: #fff;
 }
 
@@ -2422,9 +2488,9 @@ body.os-resizing {
   line-height: 1;
   padding: 2px 5px;
   border-radius: 4px;
-  background: rgba(255, 122, 176, 0.14);
-  color: var(--stage-assist);
-  border: 1px solid rgba(255, 122, 176, 0.32);
+  background: color-mix(in srgb, var(--ui-soft-assist) 14%, transparent);
+  color: var(--ui-soft-assist);
+  border: 1px solid color-mix(in srgb, var(--ui-soft-assist) 38%, transparent);
   letter-spacing: 0.04em;
 }
 .os-lib-mode {
@@ -2439,25 +2505,27 @@ body.os-resizing {
   color: var(--ui-text-muted);
   border: 1px solid var(--ui-border);
 }
+/* 模式徽章：底色用"同色系淡色块"，文字用 UI 专用语义色 ——
+   浅色界面上必须两边一起压深，否则淡黄块上的黄字直接糊成一片（实测 2.4:1）。 */
 .os-lib-mode-fullscreen {
-  color: var(--stage-special);
-  border-color: rgba(255, 209, 102, 0.35);
-  background: rgba(255, 209, 102, 0.08);
+  color: var(--ui-soft-special);
+  border-color: color-mix(in srgb, var(--ui-soft-special) 38%, transparent);
+  background: color-mix(in srgb, var(--ui-soft-special) 10%, transparent);
 }
 .os-lib-mode-overlay {
-  color: var(--stage-data);
-  border-color: rgba(90, 200, 250, 0.35);
-  background: rgba(90, 200, 250, 0.08);
+  color: var(--ui-soft-data);
+  border-color: color-mix(in srgb, var(--ui-soft-data) 38%, transparent);
+  background: color-mix(in srgb, var(--ui-soft-data) 10%, transparent);
 }
 .os-lib-mode-data {
-  color: var(--stage-assist);
-  border-color: rgba(255, 122, 176, 0.35);
-  background: rgba(255, 122, 176, 0.08);
+  color: var(--ui-soft-assist);
+  border-color: color-mix(in srgb, var(--ui-soft-assist) 38%, transparent);
+  background: color-mix(in srgb, var(--ui-soft-assist) 10%, transparent);
 }
 .os-lib-mode-transition {
-  color: var(--stage-primary);
-  border-color: rgba(139, 157, 255, 0.35);
-  background: rgba(139, 157, 255, 0.08);
+  color: var(--ui-soft-primary);
+  border-color: color-mix(in srgb, var(--ui-soft-primary) 38%, transparent);
+  background: color-mix(in srgb, var(--ui-soft-primary) 10%, transparent);
 }
 .os-color-wrap {
   display: flex;
@@ -2480,7 +2548,8 @@ body.os-resizing {
 .os-lib-en {
   font-size: 9px;
   letter-spacing: 0.08em;
-  color: var(--stage-data);
+  /* 用 UI 专用语义色而不是画布色：浅色界面上画布色当小字只有 2.9:1 */
+  color: var(--ui-soft-data);
   margin: -2px 0 4px;
 }
 .os-lib-desc {
@@ -3241,7 +3310,7 @@ body.os-resizing {
   padding: 2px 5px;
 }
 .os-preset-act-x:hover:not(:disabled) {
-  color: #ff6b6b;
+  color: var(--ui-danger);
   border-color: transparent;
 }
 /* 分组标题：名副其实地"分隔"——加一条细底线 + 更大的上间距，
@@ -4067,12 +4136,12 @@ html.os-render-alpha .os-canvas-wrapper {
 
 /* ===== 轨道标签（字幕轨固定 / 通用轨道 / 出镜·机位特殊轨）===== */
 .os-track-sub {
-  color: #ffd479;
+  color: var(--ui-soft-special);
 }
 .os-track-sub .os-track-tag {
   font-size: 9px;
-  background: rgba(255, 212, 121, 0.2);
-  color: #ffd479;
+  background: color-mix(in srgb, var(--ui-soft-special) 18%, transparent);
+  color: var(--ui-soft-special);
   border-radius: 3px;
   padding: 1px 4px;
   margin-left: 6px;
@@ -4081,7 +4150,7 @@ html.os-render-alpha .os-canvas-wrapper {
   color: var(--ui-text);
 }
 .os-track-special {
-  color: #ff9ecb;
+  color: var(--ui-soft-assist);
 }
 .os-track-add-btn {
   display: block;
@@ -4209,5 +4278,5 @@ html.os-render-alpha .os-canvas-wrapper {
   padding: 0 2px;
 }
 .os-kf-item .os-paint-item-x:hover {
-  color: #ff6b6b;
+  color: var(--ui-danger);
 }

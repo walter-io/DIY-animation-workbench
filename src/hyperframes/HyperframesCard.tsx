@@ -147,8 +147,21 @@ export function HyperframesCard({
 
   useEffect(() => {
     if (cardOpacity == null) return
+    /*
+     * ⚠️ 两级判空，缺一不可。
+     *
+     * 改任意参数（比如「文字色」）都会重建 srcDoc，iframe 文档随之换页。
+     * 换页那一瞬间 `contentDocument` **已经有值、但 `documentElement` 还是 null**，
+     * 于是 `doc.documentElement.style` 抛 `Cannot read properties of null (reading 'style')`。
+     * 这个错误发生在 useEffect 里，会被 React 当成组件崩溃 → **卸载整棵树** →
+     * 整个编辑台变成白屏（用户报的「编辑文字颜色会闪退」就是这个）。
+     *
+     * 它和具体是哪个动效卡无关 —— 只要是 hf（iframe）卡都会中招，
+     * 因为问题在这个共用组件里。别把 `.documentElement?.` 删掉。
+     */
     const doc = iframeRef.current?.contentDocument
-    if (doc) doc.documentElement.style.setProperty('--cardOpacity', String(cardOpacity))
+    const rootEl = doc?.documentElement
+    if (rootEl) rootEl.style.setProperty('--cardOpacity', String(cardOpacity))
   }, [cardOpacity, loaded, srcDoc])
 
   useEffect(() => {

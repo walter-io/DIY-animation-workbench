@@ -87,6 +87,7 @@ DIY-animation-workbench/
 │      RenderStage      ?render=1 时的导出渲染页（复用 PreviewCanvas）
 │      ExportModal / SrtImport / TemplateGallery / HomePanel / ResetConfirmModal
 │      Modal.tsx / primitives.tsx / Switch.tsx / FocalPicker.tsx
+│      CardErrorBoundary # 单卡兜底：某张卡抛错时只降级这一张，不让整棵树被卸载（见 §10-13）
 │
 ├─ 动效卡库/                      # ★ 卡包根目录（纯内容，非代码）
 │  ├─ README.md                   # 包规范（给做包的人看）
@@ -221,6 +222,56 @@ ExportModal（前端：选格式/透明/帧率/倍速/额外音轨）
                    └─ ffprobe 自动验收（编码 + alpha 通道），结论回在响应头 X-Animation-Verify
 ```
 
+### 运行前置：宿主必须装好 playwright + chromium + ffmpeg
+
+导出**不是纯前端能力** —— 它靠宿主（跑 dev server 的那个环境）里的无头 Chromium 逐帧渲染 /
+录屏。缺任何一样都会在「点开始导出」之后才失败，而且失败信息长得像玄学。三件事都要：
+
+| 依赖 | 用途 | 装法 |
+|---|---|---|
+| `playwright`（npm 包） | 代码里 `await import('playwright')` 起浏览器 | 项目根目录 `npm i -D playwright` |
+| chromium 浏览器二进制 | 真正渲染页面的那个浏览器 | `npx playwright install chromium` |
+| `ffmpeg` / `ffprobe` | 封装成 mp4/mov/webm + 导出后自动验收 | Windows 装到 PATH（`ffmpeg -version` 能出东西即可） |
+
+⚠️ **`playwright` 包装了 ≠ 浏览器装了**：`chromium.launch()` 会在缺二进制时报
+`Executable doesn't exist at …`，所以 `npx playwright install chromium` 不能省。
+Linux 上还要 `npx playwright install-deps`。
+
+**未装时的实际报错（已实测，用户见过）**：
+
+```
+导出出错:{"error":"导出需要宿主安装 playwright 与 chromium（未检测到 playwright）"}
+```
+
+拆开看：`导出出错：` 是前端 `ExportModal` 的前缀（`setLog('导出出错：' + e.message)`），
+后面那段 JSON 是**服务端返回的响应体**（`res.ok === false` → `res.text()`）。
+**注意两种错误形状不一样，别被绕晕**：
+
+- **JSON 形状** `{"error":"…"}`：来自 **HelloMe 技能包**里的 `upstream/server.js`
+  （`hasPlaywright()` 检测失败 → handler 的 catch 里 `res.end(JSON.stringify({ error }))`，`Content-Type: application/json`）。
+  也就是说这条报错是**打包版（技能包）**才会出现的形状。同一位置还有
+  `导出需要宿主安装 ffmpeg（未检测到 ffmpeg）`。
+- **纯文本形状** `Export failed: <stack>`：来自**本仓库** `vite.config.ts` 的 `exportPlugin()`（dev 环境），
+  同时在 dev server 终端打印 `ERROR: …`，可用它定位是缺 package 还是缺浏览器二进制。
+
+> 技能包与本仓库的同步：脚手架在 `DIY-animation-workbench-pro/.workbuddy/hellome-dev/`
+> （**刻意放在包目录外**，因为官方 `pack_skill.py` 的 `SKIP_DIRS` 不认自定义目录，
+> 留在包目录里会被原样打进 zip）。完整流水线 5 步见该目录的 `README.md`：
+> 本仓库 `npm run build` → `assemble-hellome.cjs` → `pack-hellome.py`
+> （内部调本机已装的官方闸 `E:\shuisheng\AI\agent\tools\pack_skill.py`，**以它打印两行 `OK:` 为准**）
+> → `verify-hellome.cjs`（31 项，含「web/assets 与 dist 逐字节一致」防漏构建、
+> 「zip 条目数 == 包目录文件数」防夹带）→ `smoke-hellome.cjs`（11 项，真浏览器跑通）。
+> 产物落在 `.workbuddy/hellome-release/diy-dongxiao-workbench-0.1.0.zip`。
+> `upstream/server.js` 不在自动同步范围内，改导出逻辑要手动同步。
+
+**怎么判断到底缺哪样**：dev 环境看 dev server 终端那行 `ERROR:`；
+技能包环境看响应体里的文字（`未检测到 playwright` / `未检测到 ffmpeg`）。
+`Cannot find package 'playwright'` = 缺 npm 包；`Executable doesn't exist` = 缺浏览器二进制。
+两者都补上后**重启服务**（`await import` / `require.resolve` 的结果不会热更新）。
+
+**没装也能用**：编辑、预览、时间轴、动效库全都不依赖 playwright，
+被挡住的只有「导出」这一步。要出片就得先把上面三样装齐。
+
 已知约束：**透明导出会整段排除图片/视频素材**（透明片本来就是拿去叠到别的画面上的），UI 里有显式警告文案，别默默删掉。
 
 ---
@@ -280,6 +331,11 @@ npm run dev -- --port 5199
 | `npm run verify:packs` | 内容包端到端（自动发现→加入库→分包停用→重新启用） |
 | `node scripts/smoke-dist.mjs`（`npm run smoke:dist`） | **不需要 dev server**：纯静态托管 `dist/`，回归「构建产物里的内容包是否可用」 |
 | `npm run verify:sfx` / `verify:subtitle` / `verify:ui` / `verify:panel` / `verify:video` / `verify:subs` / `verify:margin` / `verify:hf` | 各模块自检 |
+| `npm run verify:panel-header` | **自带 dev server**（自起自停）：左栏「动效库」头部在 220 / 180 / 300px 三种面板宽度下都不许把 `详情 / 简洁 / 全收` 挤出面板，36 条断言 + 三张截图进 `_screenshots/` |
+| `npm run verify:addcard-place` | **自带 dev server**（自起自停）：新增动效卡的落位回归 —— 5 张卡不许叠在同一轨道、播放头插在已有卡中间时不许压上去、两张全屏卡要顺延、五轨占满才顺延时间，32 条断言 + 时间轴截图 |
+| `npm run audit:contrast` | **自带 dev server**（自起自停）：逐元素算 WCAG 对比度，列出「看不清」的文字。`node scripts/audit-contrast.cjs [light\|dark] [auto\|cream\|white\|black] [--assert]`，报告进 `scripts/_tmp/contrast-out/`。会**逐个打开编辑台外壳与全部弹窗**（模板 / 导出 / 导入SRT / 历史版本 / 重置）分面审计；`--assert` 时有不合格项就退出码 1。当前基线：**四档配置全部 0 处不合格** |
+| `npm run verify:readability` | **自带 dev server**（自起自停，串行跑 4 档）：可读性回归闸 —— 浅色 / 浅色+白画布 / 深色 / 深色+白画布，每档 ~1051 处文字全量过 WCAG 门槛，任一档不过就红 |
+| `npm run verify:color-edit` | **自带 dev server**（自起自停）：改取色器（文字色 / 强调色…）的稳定性回归 —— 把改色事件摊到多个宏任务里与 React 渲染、iframe 重建交叉，59 条断言。覆盖 hf（iframe）卡 ×3 与纯 React 卡 ×2，判定「应用没被卸载 / 参数面板还在 / 单卡兜底没被触发 / 0 未捕获错误」 |
 | `npm run audit:layout` | 布局审计 |
 | `node scripts/verify-cardlibs.cjs` | **不需要 dev server**：自动选卡双卡库（常规 / 知识）回归，21 条断言。需先 `npx tsc -p tsconfig.autocards.json` |
 | `node scripts/diag-autocards.cjs <srt>` | 打印某份字幕的分段边界与选卡结果（调密度时用） |
@@ -295,14 +351,27 @@ npm run dev -- --port 5199
 2. **设置面板的下拉 CSS 优先级**：`.os-dd-form label { flex-direction: column }` 会压过行内布局，横向行必须显式写 `.os-dd-form label.os-dd-row { flex-direction: row }`，否则「标题 + 滑杆 + 数值」被挤成三行，面板虚高。
 3. **`normalizeSfxId` 不要改写成「只允许已注册 id」**（理由见 §5）。
 4. **图片/视频素材 + 透明导出不兼容**，ExportModal 里有警告文案，别默默删掉。
+5. **左栏宽度只有 220px（可拖到 180px），头部是「极限宽度」**：`动效库 (123)` 本身约 66px，`详情 / 简洁 / 全收` 三个按钮约 120px，加起来贴着 218px 的可用宽度。**任何往头部塞长文字的动作都会把按钮整组挤出面板**（实测越界 100px，按钮直接点不到）——长说明一律放到 `.os-lib-hint`（页签下方独占一行）。头部同时保留 `flex-wrap` 与两侧 `flex: 0 0 auto` 作为兜底：允许换行，但不允许压缩/越界。改完跑 `npm run verify:panel-header` 验。
 5. **停用包的偏好记在 localStorage**：换浏览器 / 清除缓存会回到「全部启用」，这是预期行为，别当成 bug 去「修复」。
-6. **导出依赖本机 ffmpeg**：`EXPORT_WORKERS` 可调并行渲染页数（默认串行 —— 实测并行反而更慢，见 `vite.config.ts` 注释）。
+6. **导出依赖宿主环境，不只是 ffmpeg**：还需要 `playwright` npm 包 + chromium 浏览器二进制，三者齐了才能导出。完整报错样例与排查步骤见 **§7「运行前置」**。另外 `EXPORT_WORKERS` 可调并行渲染页数（默认串行 —— 实测并行反而更慢，见 `vite.config.ts` 注释）。
 7. **内容目录的实时扫描是 dev 专有**：`/api/content` 由 dev server 提供；`dist` 里靠 `writeBundle` 生成的静态 `content-index.json`。改了扫描逻辑要两条路一起测，别只测 dev。
 8. **`fs.cpSync` 在中文路径上会把 node 进程打崩**：把 `动效卡库/` 拷进 `dist/` 时，`fs.cpSync(from, to, {recursive:true})` 会**让进程当场死亡** —— 无异常抛出、无 stderr、无任何回调，退出码 `0xC0000409`（STATUS_STACK_BUFFER_OVERRUN），`vite build` 于是静默中断：`tsc` 说通过、退出码看着像成功，产物里却只有一个**空的内容目录**、`content-index.json` 也不生成，而且**看不到任何报错**（`catch` 也拦不住，因为进程直接没了）。
    - 症状极具迷惑性：只有 dir 为空这一条线索，很容易怀疑是钩子没触发（`writeBundle` vs `closeBundle`）。**排查手法**：在钩子里每一步 `fs.appendFileSync` 打点落盘，最后一行停在哪个调用上就是它崩的。
    - **正确做法**：内容拷贝一律走 `vite.config.ts` 里的手写 `copyDir()`（`readdirSync` + `copyFileSync`），别用 `cpSync`。同理，构建脚本里凡是碰中文源/目标路径的 `cpSync` / `cp` 都要留意。
    - 附带教训：`writeBundle` 之后 dist 若异常，先怀疑进程崩溃，而不是钩子时机。
 9. **静态托管的 dist 要拿 ASCII 别名**：中文目录名 `动效卡库/` 在某些静态服务器 / 工具链上会出问题，所以 `writeBundle` 会额外把内容拷一份到 `dist/content/{cards,sounds}`；前端 `fetchContentIndex()` 与卡入口都按「先 ASCII 别名、失败再回退中文路径」探测。`scripts/smoke-dist.mjs` 专门用纯静态服务器托管 `dist/` 来回归这条链路（不依赖 dev server）。
+10. **`addInstance` 的落位必须走 `pickPlacement`（`src/tracks.ts`）**：新卡**不能**写死 `start = 播放头` + `track = SLOT_TRACK[slot]`。用户反馈过「添加动效卡有的在同一个轨道上叠加在已有动效卡上面了」：从库里连点时，第 3 张又回到「左侧 / 轨道1」（`idx % 2` 交替），和第 1 张时段完全重合 —— 时间轴上两条卡条画在同一行（后画的盖住先画的），画布上也是同一块地方硬压。现在的顺序是「默认槽位+默认轨道 → 同槽位换空闲轨道 → 换空闲槽位 → 全占满才顺延时间」，判定口径有两条：**轨道冲突**（同一轨道 + 时段重叠，任何卡都算）与**画面冲突**（同槽位的两张非铺满卡时段重叠；两张全屏卡也算，因为整屏就一块地方）。改完跑 `npm run verify:addcard-place`。注意 `track` 与 `slot` 是解耦的：`slot` 决定画布位置，`track` 只决定层级与时间轴行，所以「换轨道」不会让卡在画布上换位置 —— 想让它真的换位置就得换 `slot`（`pickPlacement` 在槽位被占时会这么做）。
+11. **浅色 UI 主题必须在 `.ui-light` 上写 `color`（`src/index.css`）**：`:root` 那句 `color: var(--ui-text)` 是**在 `html` 上求值**的（拿到深色值 `#eaeaec`），而 `.ui-light` 挂在 `.os-app` 这个**后代**节点上 —— 只换令牌不会改变 `html` 已经算好的 `color`。于是所有「没显式写 color、靠继承取色」的文字（弹窗标题、模板名字、按钮里的裸文本…）在浅色主题下会继承到近白色 → **白底白字，整块看不见**。用户报「模板里面文字都被白色主题给盖掉了」就是这个：模板名 `.os-tpl-name` 实测 1.03:1。修复就是给 `.ui-light` 补一行 `color: var(--ui-text)`。**别删那一行。**
+    - 教训（比 bug 本身重要）：上一轮的对比度审计只跑了**编辑台外壳**，弹窗从来没进过审计范围，所以它报了「干净」。`scripts/audit-contrast.cjs` 现在会逐个打开所有弹窗（`SURFACES` 数组），**以后新增弹窗必须往那里补一行**，否则就是漏检。改完跑 `npm run verify:readability`。
+12. **`paletteVars()` 绝不能输出空字符串（`src/themes.ts`）**：它是在 `...stageSkin.canvasVars` **之后**展开的，而默认工程的 `palette` 三个槽都是 `''`。若照旧写 `'--stage-data': p.data`，空串会先覆盖掉刚铺好的「按画布色调选出来的」语义色，然后 React 用 `style.setProperty(k, '')` 落下去等于**删除该声明** → 元素自己没有这个变量 → 一路继承到 `.os-app` 上的**皮肤**值。
+    - 症状：**深色皮肤 + 白色画布**时，画布语义色仍是深色那套亮色（`#5ac8fa`），卡片上的数字 / 强调色在白底上只有 1.9:1，几乎看不见。浅色皮肤下恰好同值所以看不出来，这正是它一直没被发现的原因。
+    - 正确写法：只输出用户**真正设过**的槽位（空则整个 key 都不出现）。`--stage-text` / `--stage-bg` 不在 `paletteVars` 里，所以它们一直是对的 —— 这个「一部分变量生效、一部分不生效」的现象就是定位线索。改完跑 `npm run verify:readability`（`dark white` 那一档专守这个坑）。
+13. **iframe 卡（hf 卡）改参数会让整个编辑台白屏（`src/hyperframes/HyperframesCard.tsx`）**：用户报「点击『因果链路』这个动效卡编辑文字颜色会闪退」。根因是那个写 `--cardOpacity` 的 `useEffect`：改任意参数都会重建 `srcDoc`，iframe 文档换页的一瞬间 `contentDocument` **已经有值、但 `documentElement` 还是 `null`**，于是 `doc.documentElement.style` 抛 `Cannot read properties of null (reading 'style')`。**React 19 下 effect 里未捕获的异常会卸载整棵树** → 整个编辑台变白屏。
+    - **它和具体哪张卡无关**：所有 hf（iframe）卡共用这个组件，所以**全都会中招**；纯 React 卡没有 iframe，不受影响。（用户问「其他动效卡会不会也有这个问题」—— 答案是 hf 那批都会。）
+    - 修法：两级判空 `const rootEl = doc?.documentElement; if (rootEl) …`。别把 `.documentElement?.` 删掉。
+    - **复现要点**：这是竞态，必须把改色事件用 `setTimeout` **摊到多个宏任务**里（别在一个同步任务里连发，React 会自动批处理掉、打不出竞态）。`npm run verify:color-edit` 就是这么做的。
+    - 兜底：`src/components/CardErrorBoundary.tsx`（在 `PreviewCanvas` 里包住每张卡，`key={inst.id}`）把「整页白屏」降级成「这一张卡出错 + 重试按钮」。**注意它的存在会掩盖回归** —— 所以 `verify:color-edit` 断言的是「`.os-card-error` 没出现」，而不是「`.os-app` 还在」。
+14. **`foldDeeper` 的合成方向与主循环相反（`scripts/audit-contrast.cjs`）**：审计器里主循环从元素往外走，`acc` 是**上层**，写 `over(acc, c)`；而 `foldDeeper` 从最深的 `html` 往里走，`acc` 是**下层**，必须写 `over(c, acc)`。早期两处都写成 `over(acc, c)`，于是每往下叠一层都把 html 的深色当成赢家 —— 任何渐变元素都会凭空多出一个「近黑底色」候选，`span.os-clip-name` 的深色字被误报成 1.08:1，还被错误地归因成 `mix-blend-mode`（工程里根本没有 mix-blend-mode）。另一个同源问题是「不透明渐变挡不住更深的层」：只要某层渐变每档都不透明，就必须 `break`，否则深色主题下时间轴底色又会冒出来当候选。**审计器自己也会说谎：报出可疑项时先验证它算的候选底色是不是真的存在于 DOM 里。**
 
 ---
 

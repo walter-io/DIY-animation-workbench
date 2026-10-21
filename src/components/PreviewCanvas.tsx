@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useEditor, usePlayhead, subtitleRenderParams } from '../store'
-import { skins, styleOptions, fontOptions, paletteVars } from '../themes'
+import { skins, styleOptions, fontOptions, paletteVars, canvasTone } from '../themes'
 import { cardSizeScale } from '../cardSize'
 import { projectCanvasBg } from '../canvasBg'
 import { isSubtitle } from '../subtitleTrack'
@@ -14,6 +14,7 @@ import {
   type CardVisual,
 } from '../cardKeyframe'
 import HostLayer from './HostLayer'
+import CardErrorBoundary from './CardErrorBoundary'
 import { useVideoSync, exportRateOf } from '../useVideoSync'
 import type { Rect } from '../hostLayouts'
 import { resolveHostState } from '../hostTween'
@@ -582,7 +583,10 @@ function ActiveCard({
           也避免和 .os-inst 自己的 transform（槽位居中用的 translate）打架 */}
       <div className="os-inst-enter" style={enterStyleFor(inst, progress)}>
         <div className="os-inst-body" data-paint-root style={bodyStyle}>
-          <Comp params={params} progress={progress} meta={inst} isPreview={false} />
+          {/* 单卡兜底：某张卡渲染/effect 抛错时只降级这一张，不让整棵树被卸载（白屏） */}
+          <CardErrorBoundary label={inst.effectId} key={inst.id}>
+            <Comp params={params} progress={progress} meta={inst} isPreview={false} />
+          </CardErrorBoundary>
         </div>
       </div>
       {editable && (
@@ -959,18 +963,30 @@ export default function PreviewCanvas({
   const styleVars = styleOptions.find((s) => s.id === project.style)?.vars ?? {}
   const fontFamily = fontOptions.find((f) => f.id === project.font)?.family ?? undefined
 
+  // 画布底色：工程级设置（跟随主题 / 米白 / 白 / 黑 / 自定义）；透明导出时不画
+  const canvasBg = alpha ? 'transparent' : projectCanvasBg(project, `${skin.canvasVars['--stage-bg']}`)
+  /**
+   * 画布色调跟着**底色**走，而不是跟着皮肤走。
+   *
+   * 深色皮肤 + 画布背景「白色」时，卡片文字仍是深色皮肤那套浅字（--stage-text #f5f5f7），
+   * 画在白底上直接消失（实测「累计交付」只有 1.05:1、「10,523」1.9:1）。
+   * 皮肤只该决定编辑器 UI（面板 / 时间轴）的亮暗 —— 这两件事解耦后，
+   * 白/米白底自动用深字、黑底自动用浅字，不用用户手动改一堆卡片颜色。
+   */
+  const tone = alpha ? skin.ui : canvasTone(canvasBg, skin.ui)
+  const stageSkin = skins[tone]
+
   const canvasStyle: React.CSSProperties = {
     width: canvasW,
     height: canvasH,
     transform: `scale(${scale})`,
-    ...(skin.canvasVars as React.CSSProperties),
+    ...(stageSkin.canvasVars as React.CSSProperties),
     ...(paletteVars(project.palette) as React.CSSProperties),
     ...(styleVars as React.CSSProperties),
     fontFamily,
     fontWeight: project.font === 'sans' ? 700 : undefined,
     ...({ '--stage-card-opacity': String(project.cardOpacity) } as React.CSSProperties),
-    // 画布背景：工程级设置（跟随主题 / 米白 / 白 / 黑 / 自定义），透明导出时不画
-    background: alpha ? 'transparent' : projectCanvasBg(project, `${skin.canvasVars['--stage-bg']}`),
+    background: canvasBg,
   }
 
   const showVideo = videoUrl != null && videoVisible && !alpha

@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import { useEditor } from '../store'
 import type { EffectDef, EffectLib } from '../types'
 import { cardMode, MODE_LABELS, defaultFitFor } from '../hyperframes/modes'
-import { skins, paletteVars } from '../themes'
+import { skins, paletteVars, canvasTone } from '../themes'
 import { projectCanvasBg } from '../canvasBg'
 import { categoryHint, categoryRank } from '../effectCategories'
 
@@ -140,11 +140,14 @@ function EffectPreview({ def }: { def: EffectDef }) {
 
   const Comp = def.component
   const skin = skins[state.project.skin]
+  // 与画布同款：底色决定色调（白/米白底用深字），库里悬停预览才不会"白底白字"
+  const previewBg = projectCanvasBg(state.project, skin.canvasVars['--stage-bg'])
+  const stageSkin = skins[canvasTone(previewBg, skin.ui)]
   const stageVars: React.CSSProperties = {
-    ...(skin.canvasVars as React.CSSProperties),
+    ...(stageSkin.canvasVars as React.CSSProperties),
     ...(paletteVars(state.project.palette) as React.CSSProperties),
     // 与画布同款背景：工程画布背景改了，库里的悬停预览也跟着变
-    background: projectCanvasBg(state.project, skin.canvasVars['--stage-bg']),
+    background: previewBg,
     ...({ '--stage-card-opacity': String(state.project.cardOpacity) } as React.CSSProperties),
   } as React.CSSProperties
 
@@ -283,10 +286,12 @@ export default function EffectLibrary() {
       <aside className="os-panel os-panel-left">
         {toast && <div className="os-lib-toast">{toast}</div>}
         <div className="os-panel-header os-panel-header-lib">
-          <span className="os-lib-header-title">
-            动效库 ({countByLib[lib]})
-            <span className="os-lib-header-sub">{LIBS.find((l) => l.id === lib)?.hint}</span>
-          </span>
+          {/*
+            标题右边原来挂着「叠加在有人物的口播画面上」这句说明：面板只有 220px 宽，
+            长句子把「详情 / 简洁 / 全收」三个按钮整个挤到面板外面。
+            说明已移到页签下方单占一行（见 .os-lib-hint），这里只留库名 + 数量。
+          */}
+          <span className="os-lib-header-title">动效库 ({countByLib[lib]})</span>
           <div className="os-lib-header-actions">
             <div className="os-lib-mode">
               {([
@@ -328,6 +333,10 @@ export default function EffectLibrary() {
               <span className="os-lib-tab-count">{countByLib[l.id]}</span>
             </button>
           ))}
+        </div>
+        {/* 当前库的一句话说明：整行独占，多长的句子都不会去挤上面的按钮 */}
+        <div className="os-lib-hint" title={LIBS.find((l) => l.id === lib)?.hint}>
+          {LIBS.find((l) => l.id === lib)?.hint}
         </div>
         {/* 搜索条放在滚动容器外面：这样滚多远它都钉在库顶部，不会跟着列表跑掉 */}
         <div className="os-lib-searchbar">

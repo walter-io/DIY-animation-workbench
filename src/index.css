@@ -13,7 +13,10 @@
   --ui-panel: #1c1c21;
   --ui-panel-hover: #232329;
   --ui-text: #eaeaec;
-  --ui-text-muted: #8e8e96;
+  /* 深色弱化文字由 #8e8e96 提到 #96969e：原值压在时间轴底色 #1c1c21 ≈ 4.4:1、
+     压在库卡片说明底色上 4.49:1，都差一点点没到 4.5（审计实测）。
+     只亮一档，观感不变。浅色主题有自己的一套，见 .ui-light。 */
+  --ui-text-muted: #96969e;
   --ui-border: #2c2c33;
   --ui-accent: #ffffff;
   --ui-accent-soft: rgba(255, 255, 255, 0.12);
@@ -24,7 +27,30 @@
   --ui-accent-color-soft: rgba(90, 200, 250, 0.18);
   --ui-on-accent: #06121b;
   /* 下拉框箭头（替换系统箭头，颜色跟随主题的文字弱化色） */
-  --ui-select-arrow: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1.5 5 5 9 1.5' fill='none' stroke='%238e8e96' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --ui-select-arrow: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1.5 5 5 9 1.5' fill='none' stroke='%2396969e' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+
+  /* ── UI 里"当彩色小字用"的语义色 ──────────────────────────────────
+     画布色（--stage-data 等）是为深色画布调的亮色。它们被编辑器 UI 借用后
+     （模式徽章、轨道名、英文小注…），一旦界面转浅色就几乎看不见 ——
+     实测 #0f8fc9 小字压在 #e4e7ec 上只有 2.9:1。所以 UI 里单独留一套：
+     深色界面 = 原来的亮色（观感不变）；浅色界面 = 压深版。 */
+  --ui-soft-primary: #8b9dff;
+  --ui-soft-data: #5ac8fa;
+  --ui-soft-assist: #ff7ab0;
+  --ui-soft-special: #ffd166;
+
+  /* 危险动作（确认重置 / 删除 × / 删除预设）的红。深色界面沿用原来的珊瑚红观感；
+     浅色界面必须压深 —— 原色 #ff6b6b 压在面板 #f7f8fa 上只有 2.61:1，
+     「确认重置」四个字基本糊在底上（审计实测）。浅色取值按**最坏底色**
+     （悬停行 #e4e7ec）算过 → ≥4.9:1。 */
+  --ui-danger: #ff6b6b;
+  --ui-danger-soft: rgba(255, 107, 107, 0.4);
+  --ui-danger-bg: rgba(255, 107, 107, 0.12);
+
+  /* 选中态渐变（库页签 / 详情·简洁 / 分段按钮）的端色：白字压在上面，
+     浅色界面必须换成压深版才够读，深色界面沿用画布色（观感不变）。 */
+  --ui-grad-from: var(--stage-data);
+  --ui-grad-to: var(--stage-primary);
 
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -44,14 +70,42 @@
   --ui-panel: #f7f8fa;
   --ui-panel-hover: #e4e7ec;
   --ui-text: #1a1c20;
-  --ui-text-muted: #6b6f78;
+  /* ⚠️ 必须同时把 color 落到主题根上：上面只是换令牌，:root 的
+     `color: var(--ui-text)` 是**在 html 上**求值的（深色 #eaeaec），
+     .ui-light 挂在 .os-app 这个后代节点上，改令牌不影响 html 已经算好的 color。
+     于是「没有显式写 color」的文字（弹窗标题、模板名字、按钮里的裸文本…）
+     在浅色主题下就会继承到近白色 —— 白底白字，整块看不见。
+     这是"模板里的文字被白色主题盖掉"的根因，别再删掉这一行。 */
+  color: var(--ui-text);
+  /* 弱化文字从 #6b6f78 压深到 #5c6067：原来压在面板上只有 4.34:1（要 4.5），
+     而卡片说明、参数提示、轨道名等几百处小字都用它，是"看不清"的最大单一来源。 */
+  --ui-text-muted: #5c6067;
   --ui-border: #d3d7df;
   --ui-accent: #1a1c20;
   --ui-accent-soft: rgba(26, 28, 32, 0.1);
   --ui-accent-color: #0f8fc9;
   --ui-accent-color-soft: rgba(15, 143, 201, 0.15);
   --ui-on-accent: #ffffff;
-  --ui-select-arrow: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1.5 5 5 9 1.5' fill='none' stroke='%236b6f78' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --ui-select-arrow: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1.5 5 5 9 1.5' fill='none' stroke='%235c6067' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+
+  /* 浅色界面专用的"彩色小字"语义色：都比画布色深一档。
+     取值按**最坏底色**（选中/悬停行 #e4e7ec + 自身 10% 同色淡块）算过，
+     保证 9px 小字也 ≥4.5:1 —— 亮一档就掉到 4.1，正是这次"看不清"的来源。 */
+  --ui-soft-primary: #3745b5;
+  --ui-soft-data: #085f86;
+  --ui-soft-assist: #93234f;
+  --ui-soft-special: #6b4800;
+
+  /* 危险色同样压深（见 :root 里的说明）：#ff6b6b → #bf2020，
+     压在面板 / 悬停行上都 ≥4.9:1，仍是一眼可辨的红。 */
+  --ui-danger: #bf2020;
+  --ui-danger-soft: rgba(191, 32, 32, 0.45);
+  --ui-danger-bg: rgba(191, 32, 32, 0.1);
+
+  /* 选中态渐变：把画布色往深里混，白字压上去才够读（`color-mix` 保留色相，
+     跟着主题色走 —— 用户换了主题色，这里的选中态也跟着变）*/
+  --ui-grad-from: color-mix(in srgb, var(--stage-data) 55%, #0a1a2a);
+  --ui-grad-to: color-mix(in srgb, var(--stage-primary) 55%, #0a1a2a);
 }
 
 * {
